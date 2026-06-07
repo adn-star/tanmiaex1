@@ -3051,7 +3051,7 @@ let authMode = 'login';
 let syncDebounceTimer = null;
 
 function initSupabase(){
-  if(!ENABLE_CLOUD_SYNC || SUPABASE_URL === 'https://vaqefvfjrgugkijxjgpz.supabase.co'){
+  if(!ENABLE_CLOUD_SYNC || SUPABASE_URL === 'YOUR_SUPABASE_URL_HERE'){
     console.log('Cloud sync disabled - running in local mode');
     return false;
   }
@@ -3118,6 +3118,7 @@ async function handleAuth(){
     subscribeToOwnChanges();
     hideAuthOverlay();
     render();
+    addUserChip();
     showSyncStatus('✓ متصل', '#16a34a');
   } catch(e){
     document.getElementById('authLoading').style.display = 'none';
@@ -3258,16 +3259,27 @@ async function logoutUser(){
   showAuthOverlay();
 }
 
-// Add user chip to topbar
+// Add user chip to topbar (robust - always recreates if missing)
 function addUserChip(){
   const topbarRight = document.querySelector('.topbar-right');
-  if(!topbarRight || document.getElementById('userChip')) return;
+  if(!topbarRight) return;
+  // Remove existing if present (will recreate fresh)
+  const existing = document.getElementById('userChip');
+  if(existing) existing.remove();
+  if(!currentUser) return;  // Only show chip when logged in
   const chip = document.createElement('div');
   chip.id = 'userChip';
   chip.className = 'user-chip';
-  chip.innerHTML = `👤 ${currentUser ? currentUser.email.split('@')[0] : 'محلي'} <span style="margin-right:4px;color:#94a3b8">|</span> <span onclick="logoutUser()" style="color:#dc2626">خروج</span>`;
+  chip.innerHTML = `👤 ${currentUser.email.split('@')[0]} <span style="margin-right:4px;color:#94a3b8">|</span> <span onclick="logoutUser()" style="color:#dc2626;cursor:pointer">خروج</span>`;
   topbarRight.insertBefore(chip, topbarRight.firstChild);
 }
+
+// Ensure chip persists across renders - check every 2 seconds
+setInterval(()=>{
+  if(currentUser && !document.getElementById('userChip')){
+    addUserChip();
+  }
+}, 2000);
 
 // Initialize on load
 async function initAuth(){
