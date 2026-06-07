@@ -3259,46 +3259,30 @@ async function logoutUser(){
   showAuthOverlay();
 }
 
-// Add user chip to topbar (robust - always recreates if missing)
+// Add user chip to topbar - SUPER ROBUST VERSION
 function addUserChip(){
-  const topbarRight = document.querySelector('.topbar-right');
-  if(!topbarRight) return;
-  // Remove existing if present (will recreate fresh)
+  console.log('[Chip] addUserChip called, currentUser:', currentUser?.email || 'none');
+  // Remove existing chip first
   const existing = document.getElementById('userChip');
   if(existing) existing.remove();
-  if(!currentUser) return;  // Only show chip when logged in
-  const chip = document.createElement('div');
-  chip.id = 'userChip';
-  chip.className = 'user-chip';
-  chip.innerHTML = `👤 ${currentUser.email.split('@')[0]} <span style="margin-right:4px;color:#94a3b8">|</span> <span onclick="logoutUser()" style="color:#dc2626;cursor:pointer">خروج</span>`;
-  topbarRight.insertBefore(chip, topbarRight.firstChild);
-}
-
-// Ensure chip persists across renders - check every 2 seconds
-setInterval(()=>{
-  if(currentUser && !document.getElementById('userChip')){
-    addUserChip();
-  }
-}, 2000);
-
-// Initialize on load
-async function initAuth(){
-  const hasCloud = initSupabase();
-  if(!hasCloud){
-    hideAuthOverlay();
+  if(!currentUser){
+    console.log('[Chip] No user logged in, skipping chip');
     return;
   }
-  showAuthOverlay();
-  // Check existing session
-  try {
-    const {data:{session}} = await supabaseClient.auth.getSession();
-    if(session){
-      currentUser = session.user;
-      await loadStateFromCloud();
-      subscribeToOwnChanges();
-      hideAuthOverlay();
-      render();
-      addUserChip();
-      showSyncStatus('✓ متصل', '#16a34a');
-    }
-  } catch(e){console.error('Session check failed:', e);
+  // Try multiple ways to find a place to inject the chip
+  let target = document.querySelector('.topbar-right');
+  if(!target){
+    target = document.querySelector('.topbar');
+  }
+  if(!target){
+    console.log('[Chip] Topbar not found - using fixed position fallback');
+    // Create as floating element if topbar not found
+    const chip = document.createElement('div');
+    chip.id = 'userChip';
+    chip.style.cssText = 'position:fixed;top:14px;left:20px;background:#fff;border:1px solid #cbd5e1;border-radius:20px;padding:8px 16px;font-family:Cairo,Arial,sans-serif;font-size:13px;font-weight:700;color:#0f172a;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:1000;display:flex;align-items:center;gap:8px';
+    chip.innerHTML = `<span style="font-size:18px">👤</span> ${currentUser.email.split('@')[0]} <span style="color:#cbd5e1;margin:0 2px">|</span> <span onclick="logoutUser()" style="color:#dc2626;cursor:pointer;font-weight:700">خروج</span>`;
+    document.body.appendChild(chip);
+    console.log('[Chip] ✓ Added as fixed-position fallback');
+    return;
+  }
+  // Normal plac
