@@ -3285,4 +3285,58 @@ function addUserChip(){
     console.log('[Chip] ✓ Added as fixed-position fallback');
     return;
   }
-  // Normal plac
+  // Normal placement in topbar
+  const chip = document.createElement('div');
+  chip.id = 'userChip';
+  chip.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f1f5f9;border-radius:20px;font-size:13px;font-weight:700;color:#0f172a;cursor:default;border:1px solid #e2e8f0';
+  chip.innerHTML = `<span style="font-size:16px">👤</span> ${currentUser.email.split('@')[0]} <span style="color:#cbd5e1;margin:0 2px">|</span> <span onclick="logoutUser()" style="color:#dc2626;cursor:pointer;font-weight:700">خروج</span>`;
+  target.insertBefore(chip, target.firstChild);
+  console.log('[Chip] ✓ Added to topbar successfully');
+}
+
+// Aggressive monitoring - check every 1 second
+setInterval(()=>{
+  if(currentUser && !document.getElementById('userChip')){
+    console.log('[Chip] Missing chip detected, re-adding...');
+    addUserChip();
+  }
+}, 1000);
+
+// Also re-add after any navigation
+window.addEventListener('popstate', ()=>setTimeout(addUserChip, 100));
+
+// Initialize on load
+async function initAuth(){
+  const hasCloud = initSupabase();
+  if(!hasCloud){
+    hideAuthOverlay();
+    return;
+  }
+  showAuthOverlay();
+  // Check existing session
+  try {
+    const {data:{session}} = await supabaseClient.auth.getSession();
+    if(session){
+      currentUser = session.user;
+      await loadStateFromCloud();
+      subscribeToOwnChanges();
+      hideAuthOverlay();
+      render();
+      addUserChip();
+      showSyncStatus('✓ متصل', '#16a34a');
+    }
+  } catch(e){console.error('Session check failed:', e);}
+}
+
+// Run initAuth after DOM ready and after main init
+document.addEventListener('DOMContentLoaded', ()=>{
+  setTimeout(initAuth, 500);
+  setTimeout(addUserChip, 1000);
+  setTimeout(addUserChip, 2000);
+  setTimeout(addUserChip, 3000);
+  console.log('[Chip] Scheduled multiple addUserChip attempts');
+});
+</script>
+
+</body>
+</html>
