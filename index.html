@@ -1,0 +1,3292 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>منظومة محاسبية - صرافة العملات</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/plugins/monthSelect/style.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/plugins/monthSelect/index.js"></script>
+<style>
+:root{--primary:#1F4E78;--primary-dark:#0F3050;--primary-light:#2E75B6;--accent:#2563eb;--success:#10b981;--danger:#ef4444;--warning:#f59e0b;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--text-light:#64748b;--sidebar-bg:#1F4E78;--sidebar-text:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Cairo',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex}
+.sidebar{width:240px;background:var(--sidebar-bg);color:var(--sidebar-text);min-height:100vh;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;flex-shrink:0}
+.sidebar-header{padding:20px;border-bottom:1px solid rgba(255,255,255,.15);text-align:center}
+.sidebar-header h1{font-size:18px;font-weight:800;margin-bottom:4px}
+.sidebar-header p{font-size:12px;opacity:.8}
+.nav{padding:12px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:12px 20px;cursor:pointer;font-size:14px;font-weight:600;transition:.15s;border-right:3px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.08)}
+.nav-item.active{background:rgba(255,255,255,.12);border-right-color:#fff}
+.nav-item .icon{font-size:18px;width:24px;text-align:center}
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.15);font-size:11px;opacity:.7;text-align:center}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{background:var(--card);padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:10;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.topbar h2{font-size:20px;font-weight:700;color:var(--primary)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.period-control{display:flex;align-items:center;gap:8px;background:#f1f5f9;padding:8px 14px;border-radius:8px;font-weight:600;font-size:14px}
+.period-control input{border:none;background:transparent;font-weight:600;font-size:14px;font-family:inherit;color:var(--text);width:130px}
+.period-control input:focus{outline:none}
+.content{padding:24px;flex:1;overflow-y:auto}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{background:var(--card);padding:18px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--border);position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;right:0;width:5px;height:100%;background:var(--primary)}
+.kpi-card.success::before{background:var(--success)}
+.kpi-card.warning::before{background:var(--warning)}
+.kpi-card.danger::before{background:var(--danger)}
+.kpi-label{font-size:13px;color:var(--text-light);font-weight:600;margin-bottom:8px}
+.kpi-value{font-size:24px;font-weight:800;color:var(--text)}
+.kpi-sub{font-size:12px;color:var(--text-light);margin-top:4px}
+.section{background:var(--card);padding:22px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--border);margin-bottom:20px}
+.section-title{font-size:16px;font-weight:700;color:var(--primary);margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.section-title-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:9px 16px;border:none;border-radius:8px;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-dark)}
+.btn-success{background:var(--success);color:#fff}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-warning{background:var(--warning);color:#fff}
+.btn-ghost{background:transparent;color:var(--primary);border:1px solid var(--border)}
+.btn-ghost:hover{background:#f1f5f9}
+.btn-sm{padding:6px 10px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:8px;max-height:600px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead{background:var(--primary);color:#fff;position:sticky;top:0;z-index:5}
+th,td{padding:10px 12px;text-align:right;border-bottom:1px solid var(--border)}
+th{font-weight:700;font-size:12px;letter-spacing:.3px}
+tbody tr:hover{background:#f8fafc}
+tbody tr:nth-child(even){background:#fafbfc}
+td.num{font-family:'Cairo',monospace;font-weight:600;text-align:left;direction:ltr;white-space:nowrap}
+td.num.neg{color:var(--danger)}
+td.num.pos{color:var(--success)}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.form-field{display:flex;flex-direction:column;gap:4px}
+.form-field label{font-size:12px;font-weight:600;color:var(--text-light)}
+.form-field input,.form-field select,.form-field textarea{padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:14px;background:#fff}
+.form-field input:focus,.form-field select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(31,78,120,.1)}
+.form-actions{display:flex;gap:10px;justify-content:flex-start;margin-top:12px;flex-wrap:wrap}
+.statement-table th{text-align:right;background:var(--primary)}
+.statement-table .section-row{background:#dbeafe;font-weight:700}
+.statement-table .subtotal-row{background:#fef9c3;font-weight:700}
+.statement-table .total-row{background:#dcfce7;font-weight:800;font-size:14px}
+.statement-table .indent{padding-right:30px}
+.badge{display:inline-block;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap}
+.badge-buy{background:#dbeafe;color:#1e40af}
+.badge-sell{background:#fef3c7;color:#92400e}
+.badge-adj{background:#e9d5ff;color:#6b21a8}
+.badge-local{background:#dcfce7;color:#166534}
+.badge-turkey{background:#fce7f3;color:#9f1239}
+.badge-tripoli{background:#fef9c3;color:#854d0e}
+.badge-misrata{background:#cffafe;color:#155e75}
+.chart-wrap{position:relative;height:300px}
+.chart-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+@media(max-width:900px){.chart-grid{grid-template-columns:1fr}}
+.alert{padding:12px 16px;border-radius:8px;margin-bottom:12px;font-size:14px}
+.alert-info{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
+.alert-success{background:#dcfce7;color:#166534;border:1px solid #86efac}
+.alert-warning{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}
+.alert-danger{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+.pagination{display:flex;gap:6px;justify-content:center;align-items:center;margin-top:12px;font-size:13px}
+.pagination button{padding:6px 10px;border:1px solid var(--border);background:#fff;cursor:pointer;border-radius:6px;font-family:inherit}
+.pagination button:disabled{opacity:.4;cursor:not-allowed}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.modal-overlay.show{display:flex !important}
+.modal-overlay .modal{background:#fff;border-radius:12px;padding:24px;max-width:1100px;width:95vw;max-height:90vh;overflow-y:auto}
+/* Highlight selected currency radio */
+label:has(input[name="dt_currency"]:checked){border-color:var(--primary)!important;background:#dbeafe!important}
+@media print{.sidebar,.topbar,.section-title-actions{display:none}.main{margin:0}.content{padding:0}}
+/* Force Western/English digits everywhere */
+html,body{font-feature-settings:"lnum" 1,"tnum" 1;font-variant-numeric:lining-nums tabular-nums}
+input,select,textarea,table,td,th,.num,.kpi-value,.kpi-sub,.badge{font-feature-settings:"lnum" 1,"tnum" 1;font-variant-numeric:lining-nums tabular-nums}
+input[type="date"],input[type="month"],input[type="number"],input[type="time"],input[type="datetime-local"]{direction:ltr;text-align:left;unicode-bidi:plaintext}
+/* Force Arabic-Indic numerals OFF for table cells with numbers */
+td.num,th{font-family:'Cairo',Arial,sans-serif;font-feature-settings:"lnum","tnum";font-variant-numeric:lining-nums tabular-nums}
+/* Make sure number inputs always show Latin digits regardless of browser locale */
+input{direction:inherit}
+/* Flatpickr customization - English digits */
+.flatpickr-calendar{font-family:'Cairo',Arial,sans-serif!important;font-feature-settings:"lnum","tnum"!important}
+.flatpickr-day,.flatpickr-monthDropdown-months,.flatpickr-current-month input.cur-year,.flatpickr-weekday,.flatpickr-time,.flatpickr-time input,.flatpickr-monthSelect-month{font-feature-settings:"lnum","tnum"!important;font-variant-numeric:lining-nums tabular-nums!important;direction:ltr}
+.flatpickr-current-month{font-feature-settings:"lnum","tnum"!important}
+.flatpickr-monthSelect-months{padding:10px}
+.flatpickr-monthSelect-month.selected{background:var(--primary);color:#fff}
+input.flatpickr-input{font-family:inherit}
+</style>
+
+<!-- Supabase Configuration - ضع بياناتك هنا من dashboard Supabase -->
+<script>
+const SUPABASE_URL = 'https://vaqefvfjrgugkijxjgpz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhcWVmdmZqcmd1Z2tpanhqZ3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MjI5NTQsImV4cCI6MjA5NjM5ODk1NH0.kTR98k6nTgltcMZuUXlqY4cdm26q8iM2sKatMK8TjJw';
+const ENABLE_CLOUD_SYNC = true;  // غيّر إلى false للعمل محلياً فقط
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div id="authOverlay" style="position:fixed;inset:0;background:linear-gradient(135deg,#1F4E78,#2E75B6);z-index:99999;display:none;align-items:center;justify-content:center;padding:20px;direction:rtl;font-family:'Cairo',Arial,sans-serif">
+  <div style="background:#fff;border-radius:20px;padding:40px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:64px">🏦</div>
+      <h1 style="margin:8px 0;color:#1F4E78;font-size:24px;font-weight:800">منظومة الصرافة</h1>
+      <p style="margin:0;color:#64748b;font-size:13px">سجّل دخولك للوصول لبياناتك السحابية</p>
+    </div>
+    <div id="authTabs" style="display:flex;border-bottom:2px solid #e2e8f0;margin-bottom:20px">
+      <button id="tabLogin" onclick="switchAuthTab('login')" style="flex:1;padding:10px;border:none;background:transparent;font-family:inherit;font-weight:700;color:#1F4E78;border-bottom:3px solid #1F4E78;cursor:pointer">دخول</button>
+      <button id="tabSignup" onclick="switchAuthTab('signup')" style="flex:1;padding:10px;border:none;background:transparent;font-family:inherit;font-weight:700;color:#94a3b8;border-bottom:3px solid transparent;cursor:pointer">تسجيل حساب جديد</button>
+    </div>
+    <div id="authForm">
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:13px;color:#475569;font-weight:600;margin-bottom:4px">البريد الإلكتروني</label>
+        <input id="authEmail" type="email" placeholder="example@email.com" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-family:inherit;font-size:14px;direction:ltr;text-align:left">
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:13px;color:#475569;font-weight:600;margin-bottom:4px">كلمة السر</label>
+        <input id="authPassword" type="password" placeholder="******" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-family:inherit;font-size:14px;direction:ltr;text-align:left">
+      </div>
+      <div id="authError" style="display:none;padding:8px 12px;background:#fee2e2;color:#991b1b;border-radius:8px;font-size:13px;margin-bottom:12px"></div>
+      <button id="authSubmitBtn" onclick="handleAuth()" style="width:100%;padding:12px;background:#1F4E78;color:#fff;border:none;border-radius:8px;font-family:inherit;font-weight:700;font-size:15px;cursor:pointer">تسجيل دخول</button>
+      <div style="text-align:center;margin-top:12px">
+        <button onclick="offlineMode()" style="background:transparent;border:none;color:#64748b;font-family:inherit;font-size:12px;cursor:pointer;text-decoration:underline">العمل دون اتصال (محلياً فقط)</button>
+      </div>
+    </div>
+    <div id="authLoading" style="display:none;text-align:center;padding:20px">
+      <div style="display:inline-block;width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:#1F4E78;border-radius:50%;animation:spin 1s linear infinite"></div>
+      <p style="color:#64748b;margin-top:12px;font-size:13px">جاري التحقق...</p>
+    </div>
+  </div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<!-- Sync status indicator -->
+<div id="syncStatus" style="position:fixed;bottom:20px;left:20px;background:#fff;border:1px solid #e2e8f0;border-radius:24px;padding:8px 16px;box-shadow:0 4px 12px rgba(0,0,0,.1);font-size:12px;color:#64748b;display:none;z-index:9998">
+  <span id="syncIcon">☁️</span> <span id="syncText">جاري المزامنة...</span>
+</div>
+
+<!-- User info chip in topbar -->
+<style>
+.user-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:#f1f5f9;border-radius:20px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer}
+.user-chip:hover{background:#e2e8f0}
+</style>
+
+<aside class="sidebar">
+<div class="sidebar-header"><h1>منظومة الصرافة</h1><p>v4.2 - محاسبة متكاملة</p></div>
+<nav class="nav" id="nav">
+<div class="nav-item active" data-page="dashboard"><span class="icon">📊</span><span>لوحة المتابعة</span></div>
+<div class="nav-item" data-page="dollar"><span class="icon">💵</span><span>حركات العملات</span></div>
+<div class="nav-item" data-page="cash"><span class="icon">💰</span><span>الخزائن والبنوك</span></div>
+<div class="nav-item" data-page="journal"><span class="icon">📒</span><span>اليومية العامة</span></div>
+<div class="nav-item" data-page="tb"><span class="icon">⚖️</span><span>ميزان المراجعة</span></div>
+<div class="nav-item" data-page="is"><span class="icon">📈</span><span>قائمة الدخل</span></div>
+<div class="nav-item" data-page="bs"><span class="icon">📋</span><span>المركز المالي</span></div>
+<div class="nav-item" data-page="revenues"><span class="icon">💰</span><span>الإيرادات</span></div>
+<div class="nav-item" data-page="expenses"><span class="icon">💸</span><span>المصاريف</span></div>
+<div class="nav-item" data-page="coa"><span class="icon">📚</span><span>دليل الحسابات</span></div>
+<div class="nav-item" data-page="settings"><span class="icon">⚙️</span><span>الإعدادات</span></div>
+</nav>
+<div class="sidebar-footer">الإصدار 2.0<br/>صُمم لـ عدنان</div>
+</aside>
+<div class="main">
+<div class="topbar">
+<h2 id="pageTitle">لوحة المتابعة</h2>
+<div class="topbar-right">
+<div class="period-control"><span>الشهر:</span><input lang="en" type="month" id="periodSelector" /></div>
+<button class="btn btn-ghost btn-sm" onclick="exportBackup()">💾 نسخة احتياطية</button>
+</div>
+</div>
+<div class="content" id="content"></div>
+</div>
+<script>
+
+
+const SEED_DOLLAR = [];
+
+
+// ============ STATE & CONSTANTS ============
+const APP_VERSION = '9.4';
+const STORAGE_KEY = 'forex_accounting_v13_new';
+
+const DEFAULT_ACCOUNTS = [
+  ['1101','خزينة طرابلس - دينار','أصل','مدين','نقدية وما في حكمها'],
+  ['1102','خزينة مصراتة - دينار','أصل','مدين','نقدية وما في حكمها'],
+  ['1103','خزينة تركيا - نقد','أصل','مدين','نقدية وما في حكمها'],
+  ['1104','خزينة دبي - نقد','أصل','مدين','نقدية وما في حكمها'],
+  ['1301','مخزون $ - طرابلس','أصل','مدين','مخزون دولار'],
+  ['1302','مخزون $ - مصراتة','أصل','مدين','مخزون دولار'],
+  ['1303','مخزون $ - تركيا','أصل','مدين','مخزون دولار'],
+  ['1304','مخزون $ - دبي','أصل','مدين','مخزون دولار'],
+  ['1311','مخزون € - طرابلس','أصل','مدين','مخزون يورو'],
+  ['1312','مخزون € - مصراتة','أصل','مدين','مخزون يورو'],
+  ['1313','مخزون € - تركيا','أصل','مدين','مخزون يورو'],
+  ['1314','مخزون € - دبي','أصل','مدين','مخزون يورو'],
+  ['1401','مدينون - متنوعون','أصل','مدين','ذمم مدينة'],
+  ['1402','مدينون - أكواد','أصل','مدين','ذمم مدينة'],
+  ['1403','مدينون - شراء $ معلق','أصل','مدين','ذمم مدينة'],
+  ['1501','سلف وعهد','أصل','مدين','ذمم مدينة'],
+  ['2101','دائنون - متنوعون','خصم','دائن','ذمم دائنة'],
+  ['2102','دائنون - أكواد','خصم','دائن','ذمم دائنة'],
+  ['2103','دائنون - شراء $ معلق (دينار)','خصم','دائن','ذمم دائنة'],
+  ['2201','عمولات مستحقة الدفع','خصم','دائن','مستحقات'],
+  ['3101','رأس المال','حقوق ملكية','دائن','حقوق الملكية'],
+  ['3201','الأرباح المحتجزة','حقوق ملكية','دائن','حقوق الملكية'],
+  ['3301','جاري الشركاء','حقوق ملكية','دائن','حقوق الملكية'],
+  ['4101','إيرادات صرف $ - طرابلس','إيراد','دائن','إيرادات الصرف'],
+  ['4102','إيرادات صرف $ - مصراتة','إيراد','دائن','إيرادات الصرف'],
+  ['4103','إيرادات صرف $ - تركيا','إيراد','دائن','إيرادات الصرف'],
+  ['4104','إيرادات صرف $ - دبي','إيراد','دائن','إيرادات الصرف'],
+  ['4111','إيرادات صرف € - طرابلس','إيراد','دائن','إيرادات الصرف'],
+  ['4112','إيرادات صرف € - مصراتة','إيراد','دائن','إيرادات الصرف'],
+  ['4113','إيرادات صرف € - تركيا','إيراد','دائن','إيرادات الصرف'],
+  ['4114','إيرادات صرف € - دبي','إيراد','دائن','إيرادات الصرف'],
+  ['4201','إيرادات بدل','إيراد','دائن','إيرادات خدمات'],
+  ['4202','إيرادات خدمات أخرى','إيراد','دائن','إيرادات خدمات'],
+  ['4301','فروقات صرف موجبة','إيراد','دائن','إيرادات متنوعة'],
+  ['4499','إيرادات استثنائية/غير مباشرة','إيراد','دائن','إيرادات متنوعة'],
+  ['5101','تكلفة $ المباع - طرابلس','تكلفة','مدين','تكلفة المبيعات'],
+  ['5102','تكلفة $ المباع - مصراتة','تكلفة','مدين','تكلفة المبيعات'],
+  ['5103','تكلفة $ المباع - تركيا','تكلفة','مدين','تكلفة المبيعات'],
+  ['5104','تكلفة $ المباع - دبي','تكلفة','مدين','تكلفة المبيعات'],
+  ['5111','تكلفة € المباع - طرابلس','تكلفة','مدين','تكلفة المبيعات'],
+  ['5112','تكلفة € المباع - مصراتة','تكلفة','مدين','تكلفة المبيعات'],
+  ['5113','تكلفة € المباع - تركيا','تكلفة','مدين','تكلفة المبيعات'],
+  ['5114','تكلفة € المباع - دبي','تكلفة','مدين','تكلفة المبيعات'],
+  ['6101','عمولات الأكواد والوسطاء','مصروف','مدين','مصاريف تشغيلية'],
+  ['6201','مصاريف بدل المعاملات','مصروف','مدين','مصاريف تشغيلية'],
+  ['6203','رسوم نقد (¼ من الألف)','مصروف','مدين','مصاريف تشغيلية'],
+  ['6301','مصاريف تشغيلية عامة','مصروف','مدين','مصاريف عمومية'],
+  ['6499','مصاريف متنوعة وفروقات صرف','مصروف','مدين','مصاريف متنوعة'],
+].map(a=>({code:a[0],name:a[1],type:a[2],nature:a[3],group:a[4]}));
+
+let state = {
+  version: APP_VERSION,
+  accounts: [...DEFAULT_ACCOUNTS],
+  // Dollar transactions: {id, date, channel:'local'|'turkey', city:'tripoli'|'misrata'|null, type:'buy'|'sell'|'adjustment', usd, rate, desc}
+  dollarTrans: [],
+  // Cash transactions: {id, date, accountCode, type:'in'|'out'|'transfer', amount, counterAccountCode?, desc}
+  cashTrans: [],
+  journalEntries: [],
+  settings: {
+    capital: 1300000,
+    openingBalances: {
+      // النقدية بالدينار
+      '1101': {debit: 698314, credit: 0},     // خزينة طرابلس
+      '1102': {debit: 518526, credit: 0},     // خزينة مصراتة
+      '1103': {debit: 0, credit: 0},           // خزينة تركيا
+      '1104': {debit: 0, credit: 0},           // خزينة دبي
+      // الذمم
+      '1401': {debit: 1124550, credit: 0},    // مدينون: 135,000$ × 8.33
+      '2101': {debit: 0, credit: 1124550},    // دائنون: 1,124,550 د.ل
+      // الأرباح المحتجزة (إيرادات أخرى 374 - تسوية تقريب 2.69)
+      '3201': {debit: 0, credit: 371.31},
+    },
+    openingCurrency: {
+      tripoli: {USD: {amount: 151537, avgCost: 9.05},   EUR: {amount: 0, avgCost: 0}},
+      misrata: {USD: {amount: 21973,  avgCost: 8.34},   EUR: {amount: 0, avgCost: 0}},
+      turkey:  {USD: {amount: -176524, avgCost: 8.3339}, EUR: {amount: 0, avgCost: 0}},
+      dubai:   {USD: {amount: 0, avgCost: 0},           EUR: {amount: 0, avgCost: 0}},
+    },
+    openingDollar: {
+      tripoli: {usd: 151537,  avgCost: 9.05},
+      misrata: {usd: 21973,   avgCost: 8.34},
+      turkey:  {usd: -176524, avgCost: 8.3339},
+      dubai:   {usd: 0, avgCost: 0},
+    },
+    feeRates: {
+      // Format: feeRates[currency_location] = {rate: 0.00025, effectiveDate: 'YYYY-MM-DD'}
+      LYD_tripoli: {rate: 0.00025, effectiveDate: '2026-06-01'},
+      LYD_misrata: {rate: 0.00025, effectiveDate: '2026-06-01'},
+      LYD_turkey:  {rate: 0.00025, effectiveDate: '2026-06-01'},
+      LYD_dubai:   {rate: 0.00025, effectiveDate: '2026-06-01'},
+      USD_tripoli: {rate: 0, effectiveDate: '2026-06-01'},
+      USD_misrata: {rate: 0, effectiveDate: '2026-06-01'},
+      USD_turkey:  {rate: 0, effectiveDate: '2026-06-01'},
+      USD_dubai:   {rate: 0, effectiveDate: '2026-06-01'},
+      EUR_tripoli: {rate: 0, effectiveDate: '2026-06-01'},
+      EUR_misrata: {rate: 0, effectiveDate: '2026-06-01'},
+      EUR_turkey:  {rate: 0, effectiveDate: '2026-06-01'},
+      EUR_dubai:   {rate: 0, effectiveDate: '2026-06-01'},
+    },
+    fiscalYearStart: '2026-06-01',
+    businessName: 'صرافة وتداول العملات',
+    accountant: 'عدنان',
+  },
+  currentPeriod: '2026-06',
+};
+
+function saveState(){
+  try{localStorage.setItem(STORAGE_KEY, JSON.stringify(state));}
+  catch(e){console.error(e);alert('فشل الحفظ');}
+}
+function loadState(){
+  const s = localStorage.getItem(STORAGE_KEY);
+  if(s){
+    try{
+      const loaded = JSON.parse(s);
+      state = {...state, ...loaded, settings:{...state.settings,...(loaded.settings||{})}};
+      if(!state.accounts || state.accounts.length === 0) state.accounts = [...DEFAULT_ACCOUNTS];
+      // Ensure all DEFAULT_ACCOUNTS exist in state.accounts (handle chart of accounts upgrades)
+      DEFAULT_ACCOUNTS.forEach(defAcc=>{
+        if(!state.accounts.find(a=>a.code===defAcc.code)){
+          state.accounts.push({...defAcc});
+        }
+      });
+      // Migrate old data - if openingDollar is old shape, convert
+      if(state.settings.openingDollarLocal || state.settings.openingDollarTurkey){
+        state.settings.openingDollar = {
+          localTripoli: {usd:0, avgCost:0},
+          localMisrata: state.settings.openingDollarLocal || {usd:0,avgCost:0},
+          turkey: state.settings.openingDollarTurkey || {usd:0,avgCost:0},
+        };
+        delete state.settings.openingDollarLocal;
+        delete state.settings.openingDollarTurkey;
+      }
+    }catch(e){console.error(e);}
+  }
+}
+
+// Format an input element's value with thousand separators
+function formatInputNum(el, allowDecimals){
+  if(!el) return;
+  const raw = el.value;
+  if(!raw || !raw.trim()){return;}
+  const num = parseNum(raw);
+  if(isNaN(num)) return;
+  // Detect if user typed decimals
+  const hasDecimals = /[.,]\d+$/.test(raw) || allowDecimals;
+  const decimalCount = (raw.match(/\.(\d+)/) || [, ''])[1].length;
+  if(hasDecimals && decimalCount > 0){
+    el.value = num.toLocaleString('en-US', {minimumFractionDigits: decimalCount, maximumFractionDigits: Math.max(decimalCount, 4)});
+  } else if(allowDecimals){
+    el.value = num.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 4});
+  } else {
+    el.value = num.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+  }
+}
+
+// parseNum needs to be globally accessible (already defined in app_v2_more.js but ensure here too)
+if(typeof parseNum === 'undefined'){
+  window.parseNum = function(v){
+    if(v === null || v === undefined) return 0;
+    let s = String(v).trim();
+    s = s.replace(/[٠-٩]/g, d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
+    s = s.replace(/[^0-9.\-]/g, '');
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  };
+}
+
+function fmt(n, dec=0){
+  if(n === null || n === undefined || isNaN(n)) return '-';
+  if(Math.abs(n) < 0.5 && dec === 0) return '-';
+  if(Math.abs(n) < 0.005) return '-';
+  return n.toLocaleString('en-US',{minimumFractionDigits:dec, maximumFractionDigits:dec});
+}
+function fmtPct(n){
+  if(n === null || n === undefined || isNaN(n) || !isFinite(n)) return '-';
+  return (n*100).toFixed(2) + '%';
+}
+function uid(){return Date.now().toString(36) + Math.random().toString(36).substr(2,5);}
+function getAccount(code){return state.accounts.find(a=>a.code===code);}
+function ym(d){return (d||'').substr(0,7);}
+function getLocation(t){
+  if(t.location) return t.location;
+  if(t.channel === 'turkey') return 'turkey';
+  if(t.city === 'tripoli') return 'tripoli';
+  if(t.city === 'misrata') return 'misrata';
+  return 'misrata';
+}
+
+function getCashAccount(t){
+  if(t.cashAccount) return t.cashAccount;
+  return {tripoli:'1101', misrata:'1102', turkey:'1103', dubai:'1104'}[getLocation(t)];
+}
+
+function getCurrency(t){
+  return t.currency || 'USD';
+}
+
+// Get applicable fee rate for a (currency, location, date)
+function getFeeRate(currency, location, date){
+  const rates = state.settings.feeRates || {};
+  const key = currency + '_' + location;
+  const cfg = rates[key];
+  if(!cfg) return 0;
+  // Apply rate only if transaction date >= effective date
+  if(date && cfg.effectiveDate && date < cfg.effectiveDate) return 0;
+  return cfg.rate || 0;
+}
+
+// Mapping: inventory accounts to (location, currency)
+const INV_ACC_REVERSE = {
+  '1301':['tripoli','USD'],'1302':['misrata','USD'],'1303':['turkey','USD'],'1304':['dubai','USD'],
+  '1311':['tripoli','EUR'],'1312':['misrata','EUR'],'1313':['turkey','EUR'],'1314':['dubai','EUR']
+};
+
+// Compute effective opening balance for any account - includes:
+// 1. Manual openingBalances from settings
+// 2. Auto-derived openings for inventory accounts (from openingCurrency)
+// 3. Auto-derived capital for 3101
+function getEffectiveOpening(accountCode){
+  const ob = state.settings.openingBalances[accountCode] || {debit:0, credit:0};
+  let dr = ob.debit || 0, cr = ob.credit || 0;
+  // Auto-include inventory opening as LYD value
+  if(INV_ACC_REVERSE[accountCode]){
+    const [loc, cur] = INV_ACC_REVERSE[accountCode];
+    const op = getOpeningInv(loc, cur);
+    const lyd = (op.amount||0) * (op.avgCost||0);
+    if(lyd > 0) dr += lyd;
+    else if(lyd < 0) cr += -lyd;
+  }
+  // Auto-include capital
+  if(accountCode === '3101'){
+    cr += state.settings.capital || 0;
+  }
+  return {debit: dr, credit: cr};
+}
+
+function getAmount(t){
+  return t.amount !== undefined ? t.amount : (t.usd !== undefined ? t.usd : 0);
+}
+
+// Map (location, currency) → account codes
+const INV_ACC = {
+  tripoli: {USD:'1301', EUR:'1311'},
+  misrata: {USD:'1302', EUR:'1312'},
+  turkey:  {USD:'1303', EUR:'1313'},
+  dubai:   {USD:'1304', EUR:'1314'},
+};
+const REV_ACC = {
+  tripoli: {USD:'4101', EUR:'4111'},
+  misrata: {USD:'4102', EUR:'4112'},
+  turkey:  {USD:'4103', EUR:'4113'},
+  dubai:   {USD:'4104', EUR:'4114'},
+};
+const COGS_ACC = {
+  tripoli: {USD:'5101', EUR:'5111'},
+  misrata: {USD:'5102', EUR:'5112'},
+  turkey:  {USD:'5103', EUR:'5113'},
+  dubai:   {USD:'5104', EUR:'5114'},
+};
+
+function getOpeningInv(location, currency){
+  const oc = state.settings.openingCurrency;
+  if(oc && oc[location] && oc[location][currency]) return oc[location][currency];
+  // Legacy fallback
+  if(currency === 'USD'){
+    const od = state.settings.openingDollar?.[location];
+    if(od) return {amount: od.usd||0, avgCost: od.avgCost||0};
+  }
+  return {amount:0, avgCost:0};
+}
+
+function getSubchannelKey(t){return getLocation(t)+'_'+getCurrency(t);}
+
+// ============ ENGINE: weighted average cost per (channel,city) subchannel ============
+function computeSubchannel(location, currency){
+  // Accepts either (location, currency) or a combined key 'tripoli_USD'
+  if(currency === undefined && location && typeof location === 'string' && location.includes('_')){
+    const parts = location.split('_'); location = parts[0]; currency = parts[1];
+  }
+  currency = currency || 'USD';
+  const opening = getOpeningInv(location, currency);
+  let bal = opening.amount;
+  let avg = opening.avgCost;
+  const key = location + '_' + currency;
+  // Include transfers where this location is either source or destination
+  const trans = state.dollarTrans.filter(t=>{
+    if(getCurrency(t) !== currency) return false;
+    if(t.type === 'transfer'){
+      return (t.fromLocation === location) || (t.toLocation === location);
+    }
+    if(t.type === 'fee_out'){
+      return t.location === location;
+    }
+    return getSubchannelKey(t) === key;
+  }).slice().sort((a,b)=>{
+    if(a.date !== b.date) return a.date.localeCompare(b.date);
+    if(a.type === b.type) return 0;
+    const order = {buy:0, transfer:1, sell:2, fee_out:2.5, adjustment:3};
+    return (order[a.type]||9) - (order[b.type]||9);
+  });
+  const enriched = [];
+  for(const t of trans){
+    const amt = getAmount(t);
+    let cogs=0, saleValue=0, profit=0, role='';
+    if(t.type === 'buy'){
+      const nb = bal + amt;
+      if(nb > 0.001) avg = (bal*avg + amt*t.rate) / nb;
+      else avg = t.rate;
+      bal = nb;
+    } else if(t.type === 'adjustment'){
+      const oldLyd = bal * avg;
+      const newLyd = amt * t.rate;
+      t.adjustmentDeltaLyd = newLyd - oldLyd;
+      bal = amt;
+      avg = t.rate;
+    } else if(t.type === 'transfer'){
+      if(t.fromLocation === location){
+        bal -= amt;
+        role = 'out';
+      } else if(t.toLocation === location){
+        const nb = bal + amt;
+        if(nb > 0.001) avg = (bal*avg + amt*t.rate) / nb;
+        else avg = t.rate;
+        bal = nb;
+        role = 'in';
+      }
+    } else if(t.type === 'fee_out'){
+      // Fee deduction: reduce inventory by amount, avg unchanged
+      bal -= amt;
+    } else { // sell
+      cogs = amt * avg;
+      saleValue = amt * t.rate;
+      profit = saleValue - cogs;
+      bal -= amt;
+    }
+    enriched.push({...t, amount:amt, runBal:bal, avgCostAfter:avg, cogs, saleValue, profit, transferRole:role});
+  }
+  return enriched;
+}
+
+function getEndOfPeriodInventory(period){
+  const out = {};
+  for(const loc of ['tripoli','misrata','turkey','dubai']){
+    out[loc] = {};
+    for(const cur of ['USD','EUR']){
+      const trans = computeSubchannel(loc, cur).filter(t=>t.date <= period+'-31');
+      let usd, avgCost;
+      if(trans.length === 0){
+        const op = getOpeningInv(loc, cur);
+        usd = op.amount; avgCost = op.avgCost;
+      } else {
+        const last = trans[trans.length-1];
+        usd = last.runBal; avgCost = last.avgCostAfter;
+      }
+      out[loc][cur] = {usd, avgCost, value: usd*avgCost};
+    }
+    // Backward compat: top-level USD aliases
+    out[loc].usd = out[loc].USD.usd;
+    out[loc].avgCost = out[loc].USD.avgCost;
+    out[loc].value = out[loc].USD.value;
+  }
+  out.localTripoli = out.tripoli; out.localMisrata = out.misrata;
+  out.local = {usd: out.tripoli.usd + out.misrata.usd, value: out.tripoli.value + out.misrata.value};
+  return out;
+}
+
+function getMonthlyDollarSummary(period){
+  const out = {};
+  for(const loc of ['tripoli','misrata','turkey','dubai']){
+    out[loc] = {};
+    let totSales=0, totSalesValue=0, totCogs=0, totProfit=0;
+    for(const cur of ['USD','EUR']){
+      const trans = computeSubchannel(loc, cur).filter(t=>ym(t.date)===period);
+      const sales = trans.filter(t=>t.type==='sell');
+      const buys = trans.filter(t=>t.type==='buy');
+      const obj = {
+        salesUsd: sales.reduce((s,t)=>s+getAmount(t),0),
+        salesValue: sales.reduce((s,t)=>s+t.saleValue,0),
+        cogs: sales.reduce((s,t)=>s+t.cogs,0),
+        profit: sales.reduce((s,t)=>s+t.profit,0),
+        buysUsd: buys.reduce((s,t)=>s+getAmount(t),0),
+        buysValue: buys.reduce((s,t)=>s+(getAmount(t)*t.rate),0),
+        count: trans.length,
+      };
+      out[loc][cur] = obj;
+      totSales += obj.salesUsd; totSalesValue += obj.salesValue; totCogs += obj.cogs; totProfit += obj.profit;
+    }
+    // Top-level totals (across both currencies)
+    out[loc].salesUsd = totSales;
+    out[loc].salesValue = totSalesValue;
+    out[loc].cogs = totCogs;
+    out[loc].profit = totProfit;
+    out[loc].count = out[loc].USD.count + out[loc].EUR.count;
+  }
+  out.localTripoli = out.tripoli; out.localMisrata = out.misrata;
+  out.local = {
+    salesValue: out.tripoli.salesValue + out.misrata.salesValue,
+    cogs: out.tripoli.cogs + out.misrata.cogs,
+    profit: out.tripoli.profit + out.misrata.profit,
+    salesUsd: out.tripoli.salesUsd + out.misrata.salesUsd,
+  };
+  return out;
+}
+
+function getYTDDollarSummary(period){
+  const year = period.substr(0,4);
+  const out = {};
+  for(const loc of ['tripoli','misrata','turkey','dubai']){
+    out[loc] = {};
+    let totSalesValue=0, totCogs=0, totProfit=0;
+    for(const cur of ['USD','EUR']){
+      const trans = computeSubchannel(loc, cur).filter(t=>t.date.substr(0,4)===year && t.date <= period+'-31');
+      const sales = trans.filter(t=>t.type==='sell');
+      const obj = {
+        salesValue: sales.reduce((s,t)=>s+t.saleValue,0),
+        cogs: sales.reduce((s,t)=>s+t.cogs,0),
+        profit: sales.reduce((s,t)=>s+t.profit,0),
+      };
+      out[loc][cur] = obj;
+      totSalesValue += obj.salesValue; totCogs += obj.cogs; totProfit += obj.profit;
+    }
+    out[loc].salesValue = totSalesValue;
+    out[loc].cogs = totCogs;
+    out[loc].profit = totProfit;
+  }
+  out.localTripoli = out.tripoli; out.localMisrata = out.misrata;
+  return out;
+}
+
+// ============ ENGINE: cash balance ============
+function getCashBalance(accountCode, period){
+  // Cash accounts: 1101 (Tripoli), 1102 (Misrata), 1103 (Turkey cash), 1201,1202,1203 (banks)
+  let bal = 0;
+  // Opening
+  const ob = state.settings.openingBalances[accountCode];
+  if(ob) bal += (ob.debit||0) - (ob.credit||0);
+  // Cash transactions
+  state.cashTrans.forEach(c=>{
+    if(c.date > period+'-31') return;
+    if(c.accountCode === accountCode){
+      bal += c.type === 'in' ? c.amount : -c.amount;
+    }
+    if(c.type === 'transfer' && c.counterAccountCode === accountCode){
+      bal += c.amount;
+    }
+  });
+  // Dollar transactions affect cash:
+  // Local buy in Tripoli → -1101 cash; Local sell in Tripoli → +1101 cash
+  // Similar for Misrata (1102) and Turkey (1103)
+  state.dollarTrans.forEach(t=>{
+    if(t.date > period+'-31') return;
+    if(t.type === 'adjustment') return;
+    const lyd = getAmount(t) * t.rate;
+    if(getCashAccount(t) === accountCode){
+      if(t.type === 'buy') bal -= lyd;
+      else if(t.type === 'sell') bal += lyd;
+    }
+  });
+  // Manual JE
+  state.journalEntries.forEach(je=>{
+    if(je.date > period+'-31') return;
+    je.lines.forEach(l=>{
+      if(l.accountCode === accountCode){
+        bal += (parseFloat(l.debit)||0) - (parseFloat(l.credit)||0);
+      }
+    });
+  });
+  return bal;
+}
+
+// ============ INCOME STATEMENT ============
+function buildIncomeStatement(period){
+  const m = getMonthlyDollarSummary(period);
+  const y = getYTDDollarSummary(period);
+  // Compute adjustment delta totals (gains to 4301, losses to 6401)
+  let adjGainMonth = 0, adjGainYtd = 0, adjLossMonth = 0, adjLossYtd = 0;
+  ['tripoli','misrata','turkey','dubai'].forEach(loc=>{
+    ['USD','EUR'].forEach(cur=>{
+      computeSubchannel(loc, cur).forEach(t=>{
+        if(t.type === 'adjustment' && typeof t.adjustmentDeltaLyd === 'number'){
+          const d = t.adjustmentDeltaLyd;
+          const yr = period.substr(0,4);
+          if(d > 0){
+            if(ym(t.date)===period) adjGainMonth += d;
+            if(t.date.substr(0,4)===yr && t.date<=period+'-31') adjGainYtd += d;
+          } else if(d < 0){
+            if(ym(t.date)===period) adjLossMonth += -d;
+            if(t.date.substr(0,4)===yr && t.date<=period+'-31') adjLossYtd += -d;
+          }
+        }
+      });
+    });
+  });
+  const r = (code, autoMonth, autoYTD) => {
+    let mc = autoMonth||0, yc = autoYTD||0;
+    state.journalEntries.forEach(je=>{
+      je.lines.forEach(l=>{
+        if(l.accountCode===code){
+          const v = (parseFloat(l.credit)||0) - (parseFloat(l.debit)||0);
+          if(ym(je.date)===period) mc += v;
+          if(je.date.substr(0,4)===period.substr(0,4) && je.date <= period+'-31') yc += v;
+        }
+      });
+    });
+    return {month:mc, ytd:yc};
+  };
+  const e = (code, autoMonth, autoYTD) => {
+    let mc = autoMonth||0, yc = autoYTD||0;
+    state.journalEntries.forEach(je=>{
+      je.lines.forEach(l=>{
+        if(l.accountCode===code){
+          const v = (parseFloat(l.debit)||0) - (parseFloat(l.credit)||0);
+          if(ym(je.date)===period) mc += v;
+          if(je.date.substr(0,4)===period.substr(0,4) && je.date <= period+'-31') yc += v;
+        }
+      });
+    });
+    // Auto: include fee_out for code 6203
+    if(code === '6203'){
+      ['tripoli','misrata','turkey','dubai'].forEach(loc=>{
+        ['USD','EUR'].forEach(cur=>{
+          computeSubchannel(loc, cur).forEach(t=>{
+            if(t.type === 'fee_out'){
+              const feeLyd = getAmount(t) * (t.feeAvgCost || t.rate);
+              if(ym(t.date)===period) mc += feeLyd;
+              if(t.date.substr(0,4)===period.substr(0,4) && t.date <= period+'-31') yc += feeLyd;
+            }
+          });
+        });
+      });
+    }
+    return {month:mc, ytd:yc};
+  };
+  const Revenue = {
+    '4101': r('4101', m.tripoli.USD.salesValue, y.tripoli.USD.salesValue),
+    '4102': r('4102', m.misrata.USD.salesValue, y.misrata.USD.salesValue),
+    '4103': r('4103', m.turkey.USD.salesValue,  y.turkey.USD.salesValue),
+    '4104': r('4104', m.dubai.USD.salesValue,   y.dubai.USD.salesValue),
+    '4111': r('4111', m.tripoli.EUR.salesValue, y.tripoli.EUR.salesValue),
+    '4112': r('4112', m.misrata.EUR.salesValue, y.misrata.EUR.salesValue),
+    '4113': r('4113', m.turkey.EUR.salesValue,  y.turkey.EUR.salesValue),
+    '4114': r('4114', m.dubai.EUR.salesValue,   y.dubai.EUR.salesValue),
+    '4201': r('4201'), '4202': r('4202'), '4301': r('4301', adjGainMonth, adjGainYtd),
+  };
+  const COGS = {
+    '5101': e('5101', m.tripoli.USD.cogs, y.tripoli.USD.cogs),
+    '5102': e('5102', m.misrata.USD.cogs, y.misrata.USD.cogs),
+    '5103': e('5103', m.turkey.USD.cogs,  y.turkey.USD.cogs),
+    '5104': e('5104', m.dubai.USD.cogs,   y.dubai.USD.cogs),
+    '5111': e('5111', m.tripoli.EUR.cogs, y.tripoli.EUR.cogs),
+    '5112': e('5112', m.misrata.EUR.cogs, y.misrata.EUR.cogs),
+    '5113': e('5113', m.turkey.EUR.cogs,  y.turkey.EUR.cogs),
+    '5114': e('5114', m.dubai.EUR.cogs,   y.dubai.EUR.cogs),
+  };
+  const Opex = {
+    '6101':e('6101'),
+    '6201':e('6201'),
+    '6203':e('6203'),
+    '6301':e('6301'),
+    '6499':e('6499', adjLossMonth, adjLossYtd),  // includes adjustment losses
+  };
+  const sum = obj => Object.values(obj).reduce((s,v)=>({month:s.month+v.month, ytd:s.ytd+v.ytd}), {month:0,ytd:0});
+  const RevTotal = sum(Revenue);
+  const COGSTotal = sum(COGS);
+  const OpexTotal = sum(Opex);
+  const GP = {month: RevTotal.month - COGSTotal.month, ytd: RevTotal.ytd - COGSTotal.ytd};
+  const NP = {month: GP.month - OpexTotal.month, ytd: GP.ytd - OpexTotal.ytd};
+  return {Revenue, RevTotal, COGS, COGSTotal, GP, Opex, OpexTotal, NP};
+}
+
+// ============ BALANCE SHEET ============
+function buildBalanceSheet(period){
+  const inv = getEndOfPeriodInventory(period);
+  const balance = (code) => {
+    if(code === '1101') return getCashBalance('1101', period);
+    if(code === '1102') return getCashBalance('1102', period);
+    if(code === '1103') return getCashBalance('1103', period);
+    if(code === '1104') return getCashBalance('1104', period);
+    if(code === '1301') return inv.tripoli.USD.value;
+    if(code === '1302') return inv.misrata.USD.value;
+    if(code === '1303') return inv.turkey.USD.value;
+    if(code === '1304') return inv.dubai.USD.value;
+    if(code === '1311') return inv.tripoli.EUR.value;
+    if(code === '1312') return inv.misrata.EUR.value;
+    if(code === '1313') return inv.turkey.EUR.value;
+    if(code === '1314') return inv.dubai.EUR.value;
+    if(code === '3101') return -state.settings.capital;
+    // Generic from JE
+    const ob = state.settings.openingBalances[code] || {debit:0,credit:0};
+    let b = (ob.debit||0) - (ob.credit||0);
+    state.journalEntries.forEach(je=>{
+      if(je.date > period+'-31') return;
+      je.lines.forEach(l=>{
+        if(l.accountCode === code) b += (parseFloat(l.debit)||0) - (parseFloat(l.credit)||0);
+      });
+    });
+    return b;
+  };
+  const is = buildIncomeStatement(period);
+  const currentProfit = is.NP.ytd;
+  const assets = state.accounts.filter(a=>a.type==='أصل').map(a=>({...a, balance: balance(a.code)}));
+  const liabs = state.accounts.filter(a=>a.type==='خصم').map(a=>({...a, balance: -balance(a.code)}));
+  const eq = state.accounts.filter(a=>a.type==='حقوق ملكية').map(a=>({...a, balance: -balance(a.code)}));
+  const totalAssets = assets.reduce((s,a)=>s+a.balance,0);
+  const totalLiab = liabs.reduce((s,a)=>s+a.balance,0);
+  const totalEquity = eq.reduce((s,a)=>s+a.balance,0) + currentProfit;
+  return {assets, liabilities:liabs, equity:eq, currentProfit, totalAssets, totalLiab, totalEquity};
+}
+
+// ============ TRIAL BALANCE ============
+function buildTrialBalance(period){
+  return state.accounts.map(a=>{
+    const ob = getEffectiveOpening(a.code);
+    let pDr=0, pCr=0, cDr=0, cCr=0;
+    state.journalEntries.forEach(je=>{
+      je.lines.forEach(l=>{
+        if(l.accountCode===a.code){
+          const d=parseFloat(l.debit)||0; const c=parseFloat(l.credit)||0;
+          if(ym(je.date)===period){pDr+=d;pCr+=c;}
+          if(je.date<=period+'-31'){cDr+=d;cCr+=c;}
+        }
+      });
+    });
+    // Auto-include dollar trans into specific accounts
+    // [(location, currency)]
+    const subInv = {'1301':[['tripoli','USD']],'1302':[['misrata','USD']],'1303':[['turkey','USD']],'1304':[['dubai','USD']],
+                    '1311':[['tripoli','EUR']],'1312':[['misrata','EUR']],'1313':[['turkey','EUR']],'1314':[['dubai','EUR']]};
+    const subRev = {'4101':[['tripoli','USD']],'4102':[['misrata','USD']],'4103':[['turkey','USD']],'4104':[['dubai','USD']],
+                    '4111':[['tripoli','EUR']],'4112':[['misrata','EUR']],'4113':[['turkey','EUR']],'4114':[['dubai','EUR']]};
+    const subCogs = {'5101':[['tripoli','USD']],'5102':[['misrata','USD']],'5103':[['turkey','USD']],'5104':[['dubai','USD']],
+                     '5111':[['tripoli','EUR']],'5112':[['misrata','EUR']],'5113':[['turkey','EUR']],'5114':[['dubai','EUR']]};
+    const cashCh = {'1101':'1101','1102':'1102','1103':'1103','1104':'1104'};
+
+    if(subInv[a.code]){
+      subInv[a.code].forEach(pair=>{
+        const [loc, cur] = pair;
+        computeSubchannel(loc, cur).forEach(t=>{
+          const amt = getAmount(t);
+          const lyd = amt * t.rate;
+          if(t.type==='buy'){
+            if(ym(t.date)===period) pDr+=lyd;
+            if(t.date<=period+'-31') cDr+=lyd;
+          } else if(t.type==='sell'){
+            if(ym(t.date)===period) pCr+=t.cogs;
+            if(t.date<=period+'-31') cCr+=t.cogs;
+          } else if(t.type==='transfer'){
+            // For source location: Cr (outgoing) at lyd value (= amount * source avg cost)
+            // For destination location: Dr (incoming) at same value
+            if(t.fromLocation === loc){
+              if(ym(t.date)===period) pCr+=lyd;
+              if(t.date<=period+'-31') cCr+=lyd;
+            } else if(t.toLocation === loc){
+              if(ym(t.date)===period) pDr+=lyd;
+              if(t.date<=period+'-31') cDr+=lyd;
+            }
+          } else if(t.type==='fee_out'){
+            // Fee deduction: Cr inventory at amount*avg_cost (use current avg)
+            const feeLyd = amt * (t.feeAvgCost || t.rate);
+            if(ym(t.date)===period) pCr+=feeLyd;
+            if(t.date<=period+'-31') cCr+=feeLyd;
+          } else if(t.type==='adjustment'){
+            // Delta vs prior balance - need delta computation
+            // For TB consistency, model as Dr/Cr based on whether balance went up or down
+            // delta_lyd = new_lyd_value - old_lyd_value (approximated)
+            // Old value at time of adjustment is recorded in t.adjustmentDeltaLyd if available
+            if(typeof t.adjustmentDeltaLyd === 'number'){
+              const delta = t.adjustmentDeltaLyd;
+              if(delta > 0){
+                if(ym(t.date)===period) pDr+=delta;
+                if(t.date<=period+'-31') cDr+=delta;
+              } else if(delta < 0){
+                if(ym(t.date)===period) pCr+=(-delta);
+                if(t.date<=period+'-31') cCr+=(-delta);
+              }
+            }
+          }
+        });
+      });
+    }
+    if(subRev[a.code]){
+      subRev[a.code].forEach(pair=>{
+        computeSubchannel(pair[0], pair[1]).forEach(t=>{
+          if(t.type==='sell'){
+            if(ym(t.date)===period)pCr+=t.saleValue;
+            if(t.date<=period+'-31')cCr+=t.saleValue;
+          }
+        });
+      });
+    }
+    if(subCogs[a.code]){
+      subCogs[a.code].forEach(pair=>{
+        computeSubchannel(pair[0], pair[1]).forEach(t=>{
+          if(t.type==='sell'){
+            if(ym(t.date)===period)pDr+=t.cogs;
+            if(t.date<=period+'-31')cDr+=t.cogs;
+          }
+        });
+      });
+    }
+    // Handle fee_out → 6203 (مصاريف رسوم نقد) auto Dr
+    if(a.code === '6203'){
+      ['tripoli','misrata','turkey','dubai'].forEach(loc=>{
+        ['USD','EUR'].forEach(cur=>{
+          computeSubchannel(loc, cur).forEach(t=>{
+            if(t.type === 'fee_out'){
+              const feeLyd = getAmount(t) * (t.feeAvgCost || t.rate);
+              if(ym(t.date)===period) pDr+=feeLyd;
+              if(t.date<=period+'-31') cDr+=feeLyd;
+            }
+          });
+        });
+      });
+    }
+    // Handle adjustment gain/loss into 4301 (gain) / 6401 (loss)
+    if(a.code === '4301' || a.code === '6401'){
+      ['tripoli','misrata','turkey','dubai'].forEach(loc=>{
+        ['USD','EUR'].forEach(cur=>{
+          computeSubchannel(loc, cur).forEach(t=>{
+            if(t.type === 'adjustment' && typeof t.adjustmentDeltaLyd === 'number'){
+              const d = t.adjustmentDeltaLyd;
+              if(a.code === '4301' && d > 0){
+                if(ym(t.date)===period) pCr+=d;
+                if(t.date<=period+'-31') cCr+=d;
+              } else if(a.code === '6401' && d < 0){
+                if(ym(t.date)===period) pDr+=(-d);
+                if(t.date<=period+'-31') cDr+=(-d);
+              }
+            }
+          });
+        });
+      });
+    }
+    if(cashCh[a.code]){
+      const targetCash = cashCh[a.code];
+      state.dollarTrans.forEach(t=>{
+        if(t.type === 'adjustment' || t.type === 'transfer') return;  // these don't affect LYD cash
+        if(getCashAccount(t) !== targetCash) return;
+        const lyd = getAmount(t) * t.rate;
+        if(t.type==='buy'){
+          if(ym(t.date)===period) pCr+=lyd;
+          if(t.date<=period+'-31') cCr+=lyd;
+        } else if(t.type==='sell'){
+          if(ym(t.date)===period) pDr+=lyd;
+          if(t.date<=period+'-31') cDr+=lyd;
+        }
+      });
+    }
+    // Cash transactions
+    state.cashTrans.forEach(c=>{
+      if(c.accountCode===a.code){
+        const amt = c.amount;
+        if(c.type==='in' || (c.type==='transfer' && c.accountCode===a.code && false)){
+          if(ym(c.date)===period)pDr+=amt;
+          if(c.date<=period+'-31')cDr+=amt;
+        } else if(c.type==='out' || c.type==='transfer'){
+          if(ym(c.date)===period)pCr+=amt;
+          if(c.date<=period+'-31')cCr+=amt;
+        }
+      }
+      if(c.type==='transfer' && c.counterAccountCode===a.code){
+        if(ym(c.date)===period)pDr+=c.amount;
+        if(c.date<=period+'-31')cDr+=c.amount;
+      }
+    });
+    const net = (ob.debit||0) - (ob.credit||0) + cDr - cCr;
+    return {...a, openingDr:ob.debit||0, openingCr:ob.credit||0, periodDr:pDr, periodCr:pCr, closingDr: net>0?net:0, closingCr: net<0?-net:0};
+  });
+}
+
+// ============ ROUTING ============
+const PAGE_TITLES = {dashboard:'لوحة المتابعة',dollar:'حركات العملات',cash:'الخزائن والبنوك',journal:'اليومية العامة',tb:'ميزان المراجعة',is:'قائمة الدخل',bs:'قائمة المركز المالي',revenues:'الإيرادات',expenses:'المصاريف',coa:'دليل الحسابات',settings:'الإعدادات'};
+let currentPage = 'dashboard';
+let dashCharts = [];
+function destroyCharts(){dashCharts.forEach(c=>c.destroy());dashCharts=[];}
+
+let settingsUnlocked = false;
+
+function simpleHash(s){
+  // Simple hash for password storage (NOT cryptographically secure)
+  let h = 5381;
+  for(let i=0; i<s.length; i++){
+    h = ((h << 5) + h) + s.charCodeAt(i);
+    h = h & 0xFFFFFFFF;
+  }
+  return h.toString(36);
+}
+
+function getSettingsPasswordHash(){
+  try{ return localStorage.getItem('forex_settings_pw') || ''; }catch(e){ return ''; }
+}
+
+function setSettingsPassword(plainPwd){
+  try{
+    if(plainPwd) localStorage.setItem('forex_settings_pw', simpleHash(plainPwd));
+    else localStorage.removeItem('forex_settings_pw');
+  }catch(e){}
+}
+
+function checkSettingsAccess(){
+  const stored = getSettingsPasswordHash();
+  if(!stored) return true;  // no password set
+  if(settingsUnlocked) return true;  // already unlocked this session
+  const entered = prompt('🔒 الإعدادات محمية بكلمة سر.\n\nأدخل كلمة السر:');
+  if(entered === null) return false;  // cancelled
+  if(simpleHash(entered) === stored){
+    settingsUnlocked = true;
+    return true;
+  } else {
+    alert('❌ كلمة السر غير صحيحة');
+    return false;
+  }
+}
+
+function goTo(p){
+  // Settings page requires password
+  if(p === 'settings' && !checkSettingsAccess()) return;
+  currentPage = p;
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.page===p));
+  document.getElementById('pageTitle').textContent = PAGE_TITLES[p]||'';
+  render();
+}
+function render(){
+  destroyCharts();
+  const c = document.getElementById('content');
+  ({dashboard:renderDashboard,dollar:renderDollar,cash:renderCash,journal:renderJournal,tb:renderTB,is:renderIS,bs:renderBS,revenues:renderRevenues,expenses:renderExpenses,coa:renderCOA,settings:renderSettings}[currentPage]||(()=>{}))(c);
+  // Initialize flatpickr on any newly rendered date/month inputs
+  setTimeout(initFlatpickr, 50);
+}
+
+// ============ DASHBOARD ============
+function renderDashboard(c){
+  const p = state.currentPeriod;
+  const is = buildIncomeStatement(p);
+  const bs = buildBalanceSheet(p);
+  const m = getMonthlyDollarSummary(p);
+  const inv = getEndOfPeriodInventory(p);
+
+  c.innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">إجمالي الإيرادات (تراكمي)</div><div class="kpi-value">${fmt(is.RevTotal.ytd,0)}</div><div class="kpi-sub">شهر: ${fmt(is.RevTotal.month,0)}</div></div>
+      <div class="kpi-card success"><div class="kpi-label">صافي الربح (تراكمي)</div><div class="kpi-value">${fmt(is.NP.ytd,0)}</div><div class="kpi-sub">هامش: ${fmtPct(is.NP.ytd/(is.RevTotal.ytd||1))}</div></div>
+      <div class="kpi-card warning"><div class="kpi-label">مجمل الربح (تراكمي)</div><div class="kpi-value">${fmt(is.GP.ytd,0)}</div><div class="kpi-sub">هامش: ${fmtPct(is.GP.ytd/(is.RevTotal.ytd||1))}</div></div>
+      <div class="kpi-card danger"><div class="kpi-label">إجمالي الأصول</div><div class="kpi-value">${fmt(bs.totalAssets,0)}</div><div class="kpi-sub">د.ل</div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">أرصدة الدولار حسب الموقع</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+        <div style="padding:14px;background:#fef9c3;border-radius:8px"><strong>أرضه - طرابلس</strong><br/>${fmt(inv.localTripoli.usd,0)} $<br/><small>متوسط: ${fmt(inv.localTripoli.avgCost,4)} | قيمة: ${fmt(inv.localTripoli.value,0)} د.ل</small></div>
+        <div style="padding:14px;background:#cffafe;border-radius:8px"><strong>أرضه - مصراتة</strong><br/>${fmt(inv.localMisrata.usd,0)} $<br/><small>متوسط: ${fmt(inv.localMisrata.avgCost,4)} | قيمة: ${fmt(inv.localMisrata.value,0)} د.ل</small></div>
+        <div style="padding:14px;background:#fce7f3;border-radius:8px"><strong>تركيا</strong><br/>${fmt(inv.turkey.usd,0)} $<br/><small>متوسط: ${fmt(inv.turkey.avgCost,4)} | قيمة: ${fmt(inv.turkey.value,0)} د.ل</small></div>
+        <div style="padding:14px;background:#e2e8f0;border-radius:8px"><strong>الإجمالي</strong><br/>${fmt(inv.localTripoli.usd+inv.localMisrata.usd+inv.turkey.usd,0)} $<br/><small>قيمة: ${fmt(inv.localTripoli.value+inv.localMisrata.value+inv.turkey.value,0)} د.ل</small></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">أرصدة الخزائن والبنوك (نهاية الشهر)</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+        ${['1101','1102','1103','1104'].map(code=>{
+          const acc=getAccount(code); if(!acc) return ''; const bal=getCashBalance(code,p);
+          return `<div style="padding:12px;background:#f1f5f9;border-radius:8px"><div style="font-size:12px;color:#64748b">${acc.name}</div><div style="font-size:18px;font-weight:700">${fmt(bal)}</div></div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="section"><div class="section-title">الأداء الشهري</div><div class="chart-wrap"><canvas id="chartMonthly"></canvas></div></div>
+      <div class="section"><div class="section-title">تركيبة الأصول</div><div class="chart-wrap"><canvas id="chartAssets"></canvas></div></div>
+    </div>
+  `;
+
+  const year = p.substr(0,4);
+  const months = Array.from({length:12},(_,i)=>`${year}-${String(i+1).padStart(2,'0')}`);
+  const monthLabels=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const monthData = months.map(mm=>{const d=getMonthlyDollarSummary(mm);return {rev:d.local.salesValue+d.turkey.salesValue, profit:d.local.profit+d.turkey.profit};});
+  dashCharts.push(new Chart(document.getElementById('chartMonthly').getContext('2d'),{
+    type:'bar', data:{labels:monthLabels, datasets:[
+      {label:'الإيرادات', data:monthData.map(d=>d.rev), backgroundColor:'#2E75B6', yAxisID:'y'},
+      {label:'صافي الربح', data:monthData.map(d=>d.profit), borderColor:'#10b981', backgroundColor:'#10b981', type:'line', yAxisID:'y1', tension:0.3},
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false, locale:'en-US',
+      plugins:{
+        legend:{position:'bottom',rtl:true,textDirection:'rtl',labels:{font:{family:"'Cairo',Arial,sans-serif"}}},
+        tooltip:{rtl:true,callbacks:{label:ctx=>` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}`}}
+      },
+      scales:{
+        x:{ticks:{font:{family:"'Cairo',Arial,sans-serif"}}},
+        y:{position:'right',ticks:{callback:v=>fmt(v),font:{family:"'Cairo',Arial,sans-serif"}}},
+        y1:{position:'left',ticks:{callback:v=>fmt(v),font:{family:"'Cairo',Arial,sans-serif"}},grid:{drawOnChartArea:false}}
+      }
+    }
+  }));
+  const mix = [
+    {label:'$ طرابلس', value:inv.tripoli.value},
+    {label:'$ مصراتة', value:inv.misrata.value},
+    {label:'$ تركيا', value:inv.turkey.value},
+    {label:'$ دبي', value:inv.dubai.value},
+    {label:'خزائن LYD', value:Math.max(0,getCashBalance('1101',p))+Math.max(0,getCashBalance('1102',p))+Math.max(0,getCashBalance('1103',p))+Math.max(0,getCashBalance('1104',p))},
+  ].filter(a=>a.value>0);
+  dashCharts.push(new Chart(document.getElementById('chartAssets').getContext('2d'),{
+    type:'doughnut', data:{labels:mix.map(a=>a.label), datasets:[{data:mix.map(a=>a.value), backgroundColor:['#2563eb','#ec4899','#f97316','#10b981','#f59e0b']}]},
+    options:{
+      responsive:true, maintainAspectRatio:false, locale:'en-US',
+      plugins:{
+        legend:{position:'bottom',rtl:true,textDirection:'rtl',labels:{font:{family:"'Cairo',Arial,sans-serif"}}},
+        tooltip:{rtl:true,callbacks:{label:ctx=>` ${ctx.label}: ${fmt(ctx.parsed)} (${fmtPct(ctx.parsed/ctx.dataset.data.reduce((s,v)=>s+v,0))})`}}
+      }
+    }
+  }));
+}
+
+// ============ DOLLAR TRANSACTIONS ============
+let dollarFilter = {location:'all', type:'all', period:'all', page:1, pageSize:50};
+
+function renderDollar(c){
+  const LOCATIONS = ['tripoli','misrata','turkey','dubai']; const CURRENCIES = ['USD','EUR'];
+  const allTrans = LOCATIONS.flatMap(loc => CURRENCIES.flatMap(cur => computeSubchannel(loc, cur)))
+    .filter(t=>{
+      if(dollarFilter.location!=='all' && getLocation(t)!==dollarFilter.location) return false;
+      if(dollarFilter.type!=='all' && t.type!==dollarFilter.type) return false;
+      if(dollarFilter.period!=='all' && ym(t.date)!==dollarFilter.period) return false;
+      return true;
+    })
+    .sort((a,b)=>b.date.localeCompare(a.date));
+
+  const inv = getEndOfPeriodInventory(state.currentPeriod);
+  const totalPages = Math.max(1, Math.ceil(allTrans.length / dollarFilter.pageSize));
+  if(dollarFilter.page > totalPages) dollarFilter.page = totalPages;
+  const slice = allTrans.slice((dollarFilter.page-1)*dollarFilter.pageSize, dollarFilter.page*dollarFilter.pageSize);
+
+  c.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:24px">
+      ${['tripoli','misrata','turkey','dubai'].map(loc=>{
+        const names={tripoli:'طرابلس',misrata:'مصراتة',turkey:'تركيا',dubai:'دبي'};
+        const flags={tripoli:'🇱🇾',misrata:'🇱🇾',turkey:'🇹🇷',dubai:'🇦🇪'};
+        const cashCode={tripoli:'1101',misrata:'1102',turkey:'1103',dubai:'1104'}[loc];
+        const lyd = getCashBalance(cashCode, state.currentPeriod);
+        const usd = inv[loc]?.USD || {usd:0, avgCost:0};
+        const eur = inv[loc]?.EUR || {usd:0, avgCost:0};
+        return `<div style="background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.06)">
+          <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;padding:14px 18px;font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px">
+            <span style="font-size:22px">${flags[loc]}</span>
+            <span>فرع ${names[loc]}</span>
+          </div>
+          <div style="padding:12px;display:flex;flex-direction:column;gap:10px">
+            <div style="background:#dcfce7;border-radius:10px;padding:12px 14px;cursor:pointer;transition:.2s" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'" onclick="showStatement('LYD','${loc}')">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+                <div style="font-size:13px;font-weight:700;color:#166534">د.ل دينار ليبي 📋</div>
+                <div style="font-size:11px;color:#166534;opacity:.7">خزينة الفرع</div>
+              </div>
+              <div style="font-size:24px;font-weight:800;color:${lyd<0?'#dc2626':'#166534'};margin-top:4px;font-family:'Cairo',monospace;direction:ltr;text-align:left">${fmt(lyd)}</div>
+            </div>
+            <div style="background:#dbeafe;border-radius:10px;padding:12px 14px;cursor:pointer;transition:.2s" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'" onclick="showStatement('USD','${loc}')">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+                <div style="font-size:13px;font-weight:700;color:#1e40af">$ دولار أمريكي 📋</div>
+                <div style="font-size:11px;color:#1e40af;opacity:.8">متوسط: ${fmt(usd.avgCost,4)}</div>
+              </div>
+              <div style="font-size:24px;font-weight:800;color:${usd.usd<0?'#dc2626':'#1e40af'};margin-top:4px;font-family:'Cairo',monospace;direction:ltr;text-align:left">${fmt(usd.usd)}</div>
+              <div style="font-size:11px;color:#64748b;margin-top:2px;text-align:left;direction:ltr">= ${fmt(usd.usd * usd.avgCost)} د.ل</div>
+            </div>
+            <div style="background:#fef3c7;border-radius:10px;padding:12px 14px;cursor:pointer;transition:.2s" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'" onclick="showStatement('EUR','${loc}')">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+                <div style="font-size:13px;font-weight:700;color:#92400e">€ يورو 📋</div>
+                <div style="font-size:11px;color:#92400e;opacity:.8">متوسط: ${fmt(eur.avgCost,4)}</div>
+              </div>
+              <div style="font-size:24px;font-weight:800;color:${eur.usd<0?'#dc2626':'#92400e'};margin-top:4px;font-family:'Cairo',monospace;direction:ltr;text-align:left">${fmt(eur.usd)}</div>
+              <div style="font-size:11px;color:#64748b;margin-top:2px;text-align:left;direction:ltr">= ${fmt(eur.usd * eur.avgCost)} د.ل</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>إضافة حركة جديدة</span>
+        <div class="section-title-actions">
+          <button class="btn btn-ghost btn-sm" onclick="openBulkImport()">📥 استيراد من Excel</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportDollarToExcel()">📤 تصدير</button>
+        </div>
+      </div>
+      <div style="background:#f1f5f9;padding:14px;border-radius:8px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--primary)">اختر العملة:</div>
+        <div style="display:flex;gap:18px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 14px;background:#fff;border:2px solid var(--primary);border-radius:8px;font-weight:700">
+            <input type="radio" name="dt_currency" value="USD" checked style="width:18px;height:18px;cursor:pointer;accent-color:var(--primary)">
+            <span style="font-size:18px">$</span><span>دولار أمريكي</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 14px;background:#fff;border:2px solid var(--border);border-radius:8px;font-weight:700">
+            <input type="radio" name="dt_currency" value="EUR" style="width:18px;height:18px;cursor:pointer;accent-color:var(--primary)">
+            <span style="font-size:18px">€</span><span>يورو</span>
+          </label>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-field"><label>التاريخ</label><input lang="en" type="date" id="dt_date" value="${new Date().toISOString().substr(0,10)}"></div>
+        <div class="form-field"><label>النوع <span style="color:#ef4444">*</span></label>
+          <select id="dt_type">
+            <option value="buy">شراء</option>
+            <option value="sell">بيع</option>
+            <option value="adjustment">تسوية رصيد</option>
+          </select>
+        </div>
+        <div class="form-field"><label>موقع المخزون <span style="color:#ef4444">*</span></label>
+          <select id="dt_location">
+            <option value="tripoli">طرابلس</option>
+            <option value="misrata">مصراتة</option>
+            <option value="turkey">تركيا</option>
+            <option value="dubai">دبي</option>
+          </select>
+        </div>
+        <div class="form-field"><label>خزينة الدينار (المقابل)</label>
+          <select id="dt_cashAccount">
+            <option value="">— تلقائي (نفس الموقع) —</option>
+            <option value="1101">خزينة طرابلس</option>
+            <option value="1102">خزينة مصراتة</option>
+            <option value="1103">خزينة تركيا</option>
+            <option value="1104">خزينة دبي</option>
+          </select>
+        </div>
+        <div class="form-field"><label>القيمة (بالعملة المختارة)</label><input lang="en" type="text" inputmode="decimal" id="dt_usd" placeholder="0.00" onblur="formatInputNum(this,true)" onfocus="this.value=parseNum(this.value)||''"></div>
+        <div class="form-field"><label>سعر الصرف / المتوسط</label><input lang="en" type="text" inputmode="decimal" id="dt_rate" placeholder="0.0000" onblur="formatInputNum(this,true)" onfocus="this.value=parseNum(this.value)||''"></div>
+        <div class="form-field" style="grid-column:span 2"><label>الوصف</label><input type="text" id="dt_desc" placeholder="اسم العميل أو ملاحظة..."></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="addDollarTrans()">+ إضافة الحركة</button></div>
+      <div class="alert alert-info" style="margin-top:8px;font-size:12px">
+        <strong>تسوية رصيد:</strong> استخدمها لضبط الرصيد عند فرق مع الواقع. ستضبط الرصيد للقيمة المُدخلة (USD أو EUR حسب اختيارك) بمتوسط التكلفة (السعر).
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>سجل الحركات (${allTrans.length} حركة)</span>
+        <div class="section-title-actions">
+          <select onchange="dollarFilter.location=this.value;dollarFilter.page=1;render()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit">
+            <option value="all" ${dollarFilter.location==='all'?'selected':''}>كل المواقع</option>
+            <option value="tripoli" ${dollarFilter.location==='tripoli'?'selected':''}>طرابلس</option>
+            <option value="misrata" ${dollarFilter.location==='misrata'?'selected':''}>مصراتة</option>
+            <option value="turkey" ${dollarFilter.location==='turkey'?'selected':''}>تركيا</option>
+            <option value="dubai" ${dollarFilter.location==='dubai'?'selected':''}>دبي</option>
+          </select>
+          <select onchange="dollarFilter.type=this.value;dollarFilter.page=1;render()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit">
+            <option value="all" ${dollarFilter.type==='all'?'selected':''}>كل الأنواع</option>
+            <option value="buy" ${dollarFilter.type==='buy'?'selected':''}>شراء</option>
+            <option value="sell" ${dollarFilter.type==='sell'?'selected':''}>بيع</option>
+            <option value="adjustment" ${dollarFilter.type==='adjustment'?'selected':''}>تسوية</option>
+          </select>
+          <input lang="en" type="month" onchange="dollarFilter.period=this.value||'all';dollarFilter.page=1;render()" value="${dollarFilter.period==='all'?'':dollarFilter.period}" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit">
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>التاريخ</th><th>الموقع/الخزينة</th><th>العملة</th><th>النوع</th><th>المبلغ</th><th>السعر</th>
+            <th>قيمة (د.ل)</th><th>تكلفة</th><th>ربح</th><th>الرصيد</th><th>متوسط</th><th>الوصف</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${slice.length===0?`<tr><td colspan="13" style="text-align:center;padding:30px;color:#94a3b8">لا توجد حركات</td></tr>`:
+              slice.map(t=>`<tr>
+                <td>${t.date}</td>
+                <td><span class="badge badge-${getLocation(t)}">${({tripoli:'طرابلس',misrata:'مصراتة',turkey:'تركيا',dubai:'دبي'})[getLocation(t)]}</span><br/><small style="color:#64748b;font-size:10px">${getAccount(getCashAccount(t))?.name?.replace('خزينة ','').replace(' - دينار','').replace(' - نقد','')||'-'}</small></td>
+                <td><span class="badge" style="background:${getCurrency(t)==='USD'?'#dbeafe':'#fef3c7'};color:${getCurrency(t)==='USD'?'#1e40af':'#92400e'}">${getCurrency(t)==='USD'?'$':'€'}</span></td>
+                <td><span class="badge badge-${t.type}">${t.type==='buy'?'شراء':t.type==='sell'?'بيع':'تسوية'}</span></td>
+                <td class="num">${fmt(getAmount(t),0)}</td>
+                <td class="num">${fmt(t.rate,4)}</td>
+                <td class="num">${fmt(t.type==='buy'?t.usd*t.rate:t.saleValue,2)}</td>
+                <td class="num">${t.type==='sell'?fmt(t.cogs):'-'}</td>
+                <td class="num ${t.profit>0?'pos':t.profit<0?'neg':''}">${t.type==='sell'?fmt(t.profit):'-'}</td>
+                <td class="num ${t.runBal<0?'neg':''}">${fmt(t.runBal)}</td>
+                <td class="num">${fmt(t.avgCostAfter,4)}</td>
+                <td style="font-size:12px">${(t.desc||'').substring(0,30)}</td>
+                <td><button class="btn btn-danger btn-sm" onclick="deleteDollar('${t.id}')">×</button></td>
+              </tr>`).join('')
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <button onclick="dollarFilter.page=1;render()" ${dollarFilter.page===1?'disabled':''}>أول</button>
+        <button onclick="dollarFilter.page--;render()" ${dollarFilter.page===1?'disabled':''}>‹</button>
+        <span>${dollarFilter.page} / ${totalPages}</span>
+        <button onclick="dollarFilter.page++;render()" ${dollarFilter.page>=totalPages?'disabled':''}>›</button>
+        <button onclick="dollarFilter.page=${totalPages};render()" ${dollarFilter.page===totalPages?'disabled':''}>آخر</button>
+      </div>
+    </div>
+  `;
+}
+
+function toggleCityField(){
+  const channel = document.getElementById('dt_channel')?.value;
+  const cityField = document.getElementById('cityField');
+  if(cityField) cityField.style.display = channel === 'local' ? '' : 'none';
+}
+
+function addDollarTrans(){
+  const date = document.getElementById('dt_date').value;
+  const currencyEl = document.querySelector('input[name="dt_currency"]:checked');
+  const currency = currencyEl ? currencyEl.value : 'USD';
+  const location = document.getElementById('dt_location').value;
+  const cashAccount = document.getElementById('dt_cashAccount').value || null;
+  const type = document.getElementById('dt_type').value;
+  const amount = parseNum(document.getElementById('dt_usd').value);
+  const rate = parseNum(document.getElementById('dt_rate').value);
+  const desc = document.getElementById('dt_desc').value;
+  if(!date || !rate || (type!=='adjustment' && !amount)){alert('يرجى تعبئة الحقول المطلوبة'); return;}
+  if(!location){alert('يرجى تحديد موقع المخزون'); return;}
+  const t = {id:uid(), date, currency, location, type, amount, rate, desc};
+  if(cashAccount) t.cashAccount = cashAccount;
+  state.dollarTrans.push(t);
+
+  // Auto-apply fees based on inflow currency and location
+  const cashAcc = cashAccount || {tripoli:'1101', misrata:'1102', turkey:'1103', dubai:'1104'}[location];
+  if(type === 'sell'){
+    // SELL: LYD enters cash account at cashAcc's location → LYD fee
+    const cashLoc = {1101:'tripoli',1102:'misrata',1103:'turkey',1104:'dubai'}[cashAcc];
+    const lydFeeRate = getFeeRate('LYD', cashLoc, date);
+    if(lydFeeRate > 0){
+      const lydInflow = amount * rate;
+      const fee = Math.round(lydInflow * lydFeeRate * 100) / 100;
+      if(fee > 0){
+        state.journalEntries.push({
+          id: uid(), date,
+          num: 'FEE-' + uid().substr(-4),
+          desc: `رسوم نقد LYD - بيع ${currency==='USD'?'$':'€'}`,
+          lines: [
+            {accountCode: '6203', debit: fee, credit: 0, description: `${(lydFeeRate*100).toFixed(4)}% × ${fmt(lydInflow)} د.ل`},
+            {accountCode: cashAcc, debit: 0, credit: fee, description: 'خصم رسوم من النقد'}
+          ]
+        });
+      }
+    }
+  } else if(type === 'buy'){
+    // BUY: USD/EUR enters inventory at location → currency fee
+    const curFeeRate = getFeeRate(currency, location, date);
+    if(curFeeRate > 0){
+      const feeCurrency = Math.round(amount * curFeeRate * 100) / 100;
+      const feeLyd = Math.round(feeCurrency * rate * 100) / 100;
+      if(feeCurrency > 0){
+        // Add fee_out trans to reduce inventory
+        state.dollarTrans.push({
+          id: uid(), date, currency, type:'fee_out',
+          location, amount: feeCurrency, rate,
+          desc: `رسوم ${(curFeeRate*100).toFixed(4)}% على شراء ${currency}`
+        });
+      }
+    }
+  }
+
+  saveState();
+  render();
+}
+
+function deleteDollar(id){
+  if(!confirm('حذف هذه الحركة؟'))return;
+  state.dollarTrans = state.dollarTrans.filter(t=>t.id!==id);
+  saveState();
+  render();
+}
+
+// ============ CASH/BANK ============
+let cashFilter = {accountCode:'1101'};
+function renderCash(c){
+  const cashAccounts = state.accounts.filter(a=>['1101','1102','1103','1104'].includes(a.code));
+  const p = state.currentPeriod;
+  const inv = getEndOfPeriodInventory(p);
+  c.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:24px">
+      ${['tripoli','misrata','turkey','dubai'].map(loc=>{
+        const names={tripoli:'طرابلس',misrata:'مصراتة',turkey:'تركيا',dubai:'دبي'};
+        const flags={tripoli:'🇱🇾',misrata:'🇱🇾',turkey:'🇹🇷',dubai:'🇦🇪'};
+        const cashCode={tripoli:'1101',misrata:'1102',turkey:'1103',dubai:'1104'}[loc];
+        const lyd = getCashBalance(cashCode, state.currentPeriod);
+        const usd = inv[loc]?.USD || {usd:0, avgCost:0};
+        const eur = inv[loc]?.EUR || {usd:0, avgCost:0};
+        return `<div style="background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.06)">
+          <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;padding:14px 18px;font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px">
+            <span style="font-size:22px">${flags[loc]}</span>
+            <span>فرع ${names[loc]}</span>
+          </div>
+          <div style="padding:12px;display:flex;flex-direction:column;gap:10px">
+            <div style="background:#dcfce7;border-radius:10px;padding:12px 14px;cursor:pointer;transition:.2s" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'" onclick="showStatement('LYD','${loc}')">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+                <div style="font-size:13px;font-weight:700;color:#166534">د.ل دينار ليبي 📋</div>
+                <div style="font-size:11px;color:#166534;opacity:.7">خزينة الفرع</div>
+              </div>
+              <div style="font-size:24px;font-weight:800;color:${lyd<0?'#dc2626':'#166534'};margin-top:4px;font-family:'Cairo',monospace;direction:ltr;text-align:left">${fmt(lyd)}</div>
+            </div>
+            <div style="background:#dbeafe;border-radius:10px;padding:12px 14px;cursor:pointer;transition:.2s" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'" onclick="showStatement('USD','${loc}')">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+                <div style="font-size:13px;font-weight:700;color:#1e40af">$ دولار أمريكي 📋</div>
+                <div style="font-size:11px;color:#1e40af;opacity:.8">متوسط: ${fmt(usd.avgCost,4)}</div>
+              </div>
+              <div style="font-size:24px;font-weight:800;color:${usd.usd<0?'#dc2626':'#1e40af'};margin-top:4px;font-family:'Cairo',monospace;direction:ltr;text-align:left">${fmt(usd.usd)}</div>
+              <div style="font-size:11px;color:#64748b;margin-top:2px;text-align:left;direction:ltr">= ${fmt(usd.usd * usd.avgCost)} د.ل</div>
+            </div>
+            <div style="background:#fef3c7;border-radius:10px;padding:12px 14px;cursor:pointer;transition:.2s" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'" onclick="showStatement('EUR','${loc}')">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+                <div style="font-size:13px;font-weight:700;color:#92400e">€ يورو 📋</div>
+                <div style="font-size:11px;color:#92400e;opacity:.8">متوسط: ${fmt(eur.avgCost,4)}</div>
+              </div>
+              <div style="font-size:24px;font-weight:800;color:${eur.usd<0?'#dc2626':'#92400e'};margin-top:4px;font-family:'Cairo',monospace;direction:ltr;text-align:left">${fmt(eur.usd)}</div>
+              <div style="font-size:11px;color:#64748b;margin-top:2px;text-align:left;direction:ltr">= ${fmt(eur.usd * eur.avgCost)} د.ل</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="alert alert-info" style="font-size:13px">
+      <strong>📌 ملاحظة:</strong> الحركات النقدية تأتي تلقائياً من: (1) عمليات الشراء/البيع في "حركات الدولار"، (2) التحويلات أدناه، (3) قيود اليومية العامة. لإضافة إيداع/سحب من مصدر خارجي (رأس مال إضافي، سحوبات شخصية، مصاريف خارجية)، استخدم "اليومية العامة".
+    </div>
+
+    <div class="section">
+      <div class="section-title">🔄 تحويل بين الفروع/الخزائن (قيد مزدوج)</div>
+      <div style="background:#f1f5f9;padding:12px;border-radius:8px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--primary)">العملة المُحوَّلة:</div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap" id="transferCurrencyGroup">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;background:#fff;border:2px solid var(--primary);border-radius:8px;font-weight:700">
+            <input type="radio" name="tr_currency" value="LYD" checked onchange="updateTransferOptions()" style="width:18px;height:18px;accent-color:var(--primary)">
+            <span>د.ل دينار ليبي</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;background:#fff;border:2px solid var(--border);border-radius:8px;font-weight:700">
+            <input type="radio" name="tr_currency" value="USD" onchange="updateTransferOptions()" style="width:18px;height:18px;accent-color:var(--primary)">
+            <span>$ دولار</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;background:#fff;border:2px solid var(--border);border-radius:8px;font-weight:700">
+            <input type="radio" name="tr_currency" value="EUR" onchange="updateTransferOptions()" style="width:18px;height:18px;accent-color:var(--primary)">
+            <span>€ يورو</span>
+          </label>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-field"><label>التاريخ</label><input lang="en" type="date" id="tr_date" value="${new Date().toISOString().substr(0,10)}"></div>
+        <div class="form-field"><label>من (الحساب المُرسِل)</label><select id="tr_from"></select></div>
+        <div class="form-field"><label>إلى (الحساب المُستلِم)</label><select id="tr_to"></select></div>
+        <div class="form-field"><label>المبلغ</label><input lang="en" type="text" inputmode="decimal" id="tr_amount" placeholder="0.00" onblur="formatInputNum(this,true)" onfocus="this.value=parseNum(this.value)||''"></div>
+        <div class="form-field"><label>قيمة العمولة</label><input lang="en" type="text" inputmode="decimal" id="tr_commission" placeholder="0.00" value="" onblur="formatInputNum(this,true)" onfocus="this.value=parseNum(this.value)||''"></div>
+        <div class="form-field"><label>عملة العمولة</label>
+          <select id="tr_commission_currency" onchange="toggleCommissionRate()">
+            <option value="LYD" selected>د.ل دينار ليبي</option>
+            <option value="USD">$ دولار</option>
+            <option value="EUR">€ يورو</option>
+          </select>
+        </div>
+        <div class="form-field" id="tr_commission_rate_field" style="display:none"><label>سعر صرف العمولة (د.ل لكل وحدة)</label><input lang="en" type="text" inputmode="decimal" id="tr_commission_rate" placeholder="0.0000" onblur="formatInputNum(this,true)" onfocus="this.value=parseNum(this.value)||''"></div>
+        <div class="form-field"><label>اتجاه العمولة</label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 12px;background:#fff;border:2px solid var(--border);border-radius:6px;font-size:13px;font-weight:700">
+              <input type="radio" name="tr_commission_dir" value="for_us" checked style="accent-color:var(--primary)">📈 لنا (إيراد)
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 12px;background:#fff;border:2px solid var(--border);border-radius:6px;font-size:13px;font-weight:700">
+              <input type="radio" name="tr_commission_dir" value="on_us" style="accent-color:var(--primary)">📉 علينا (مصروف)
+            </label>
+          </div>
+        </div>
+        <div class="form-field"><label>فرع العمولة</label>
+          <select id="tr_commission_branch">
+            <option value="">— تلقائي (نفس مصدر التحويل) —</option>
+            <option value="tripoli">طرابلس</option>
+            <option value="misrata">مصراتة</option>
+            <option value="turkey">تركيا</option>
+            <option value="dubai">دبي</option>
+          </select>
+        </div>
+        <div class="form-field" style="grid-column:span 2"><label>الوصف (اختياري)</label><input type="text" id="tr_desc" placeholder="سبب التحويل..."></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-success" onclick="addTransfer()">↔️ تنفيذ التحويل</button></div>
+      <div class="alert alert-info" style="margin-top:8px;font-size:12px">
+        <strong>كيف يعمل:</strong> القيد مزدوج تلقائياً (مدين المستلم / دائن المرسل). للدولار واليورو، متوسط تكلفة المصدر يُورَّث للمستقبِل. <strong>العمولة:</strong> اتركها فارغة أو صفراً إذا لا توجد عمولة. تختار الاتجاه (لنا/علينا) والفرع المتأثر، وإن لم تختر فرعاً فيُستخدم مصدر التحويل تلقائياً.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>سجل الحركات - ${getAccount(cashFilter.accountCode)?.name||''}</span>
+        <select onchange="cashFilter.accountCode=this.value;render()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-weight:700">
+          ${cashAccounts.map(a=>`<option value="${a.code}" ${cashFilter.accountCode===a.code?'selected':''}>${a.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>التاريخ</th><th>النوع</th><th>الوصف</th><th>وارد</th><th>صادر</th><th>الرصيد</th><th></th></tr></thead>
+        <tbody>${renderCashRows(cashFilter.accountCode)}</tbody>
+      </table></div>
+    </div>
+  `;
+  // Populate transfer dropdowns after DOM is ready
+  setTimeout(()=>{
+    updateTransferOptions();
+    toggleCommissionRate();
+  }, 30);
+}
+
+function renderCashRows(code){
+  // List all movements affecting this account (cash trans, dollar trans, JE)
+  const movements = [];
+  state.cashTrans.forEach(c=>{
+    if(c.accountCode===code){
+      movements.push({date:c.date, type:c.type==='in'?'إيداع':c.type==='out'?'سحب':'تحويل خارج', desc:c.desc||'', in:c.type==='in'?c.amount:0, out:c.type!=='in'?c.amount:0, id:c.id, src:'cash'});
+    }
+    if(c.type==='transfer' && c.counterAccountCode===code){
+      movements.push({date:c.date, type:'تحويل وارد', desc:c.desc||'', in:c.amount, out:0, id:c.id, src:'cash'});
+    }
+  });
+  state.dollarTrans.forEach(t=>{
+    if(t.type==='adjustment') return;
+    if(t.type==='transfer') return;  // currency transfers don't affect cash
+    const amt = getAmount(t);
+    const lyd = amt*t.rate;
+    const cur = getCurrency(t);
+    const sym = cur==='USD'?'$':'€';
+    let cashAcc = getCashAccount(t);
+    if(cashAcc===code){
+      if(t.type==='buy') movements.push({date:t.date, type:`شراء ${sym}`, desc:`${fmt(amt,0)}${sym} × ${fmt(t.rate,4)}`, in:0, out:lyd, id:t.id, src:'dollar'});
+      else if(t.type==='sell') movements.push({date:t.date, type:`بيع ${sym}`, desc:`${fmt(amt,0)}${sym} × ${fmt(t.rate,4)}`, in:lyd, out:0, id:t.id, src:'dollar'});
+    }
+  });
+  state.journalEntries.forEach(je=>{
+    je.lines.forEach(l=>{
+      if(l.accountCode===code){
+        const d=parseFloat(l.debit)||0; const cr=parseFloat(l.credit)||0;
+        if(d||cr) movements.push({date:je.date, type:`قيد #${je.num}`, desc:l.description||je.desc||'', in:d, out:cr, id:je.id, src:'je'});
+      }
+    });
+  });
+  movements.sort((a,b)=>a.date.localeCompare(b.date));
+  let bal = 0;
+  const ob = state.settings.openingBalances[code];
+  if(ob) bal = (ob.debit||0)-(ob.credit||0);
+  return movements.map(m=>{bal += m.in - m.out; return `<tr>
+    <td>${m.date}</td><td>${m.type}</td><td style="font-size:12px">${m.desc}</td>
+    <td class="num pos">${m.in?fmt(m.in):'-'}</td><td class="num neg">${m.out?fmt(m.out):'-'}</td>
+    <td class="num ${bal<0?'neg':''}">${fmt(bal)}</td>
+    <td>${m.src==='cash'?`<button class="btn btn-danger btn-sm" onclick="deleteCash('${m.id}')">×</button>`:''}</td>
+  </tr>`;}).reverse().join('') || '<tr><td colspan="7" style="text-align:center;padding:30px">لا توجد حركات</td></tr>';
+}
+
+function toggleCashType(){
+  const t = document.getElementById('ct_type').value;
+  document.getElementById('ct_counterField').style.display = t==='transfer'?'':'none';
+}
+
+function addCash(){
+  const date = document.getElementById('ct_date').value;
+  const type = document.getElementById('ct_type').value;
+  const accountCode = document.getElementById('ct_acc').value;
+  const amount = parseNum(document.getElementById('ct_amount').value);
+  const desc = document.getElementById('ct_desc').value;
+  const counterAccountCode = type==='transfer' ? document.getElementById('ct_counter').value : null;
+  if(!date || !amount){alert('بيانات ناقصة'); return;}
+  if(type==='transfer' && accountCode===counterAccountCode){alert('لا يمكن التحويل لنفس الحساب'); return;}
+  state.cashTrans.push({id:uid(), date, type, accountCode, counterAccountCode, amount, desc});
+  saveState();
+  // Auto-switch filter to the account that was just modified, so the new movement is visible
+  cashFilter.accountCode = accountCode;
+  render();
+}
+
+function updateTransferOptions(){
+  const cur = document.querySelector('input[name="tr_currency"]:checked')?.value || 'LYD';
+  const fromSel = document.getElementById('tr_from');
+  const toSel = document.getElementById('tr_to');
+  if(!fromSel || !toSel) return;
+  let options = [];
+  if(cur === 'LYD'){
+    options = [
+      {val:'1101', label:'خزينة طرابلس'},
+      {val:'1102', label:'خزينة مصراتة'},
+      {val:'1103', label:'خزينة تركيا'},
+      {val:'1104', label:'خزينة دبي'},
+    ];
+  } else {
+    // USD or EUR: use location codes
+    options = [
+      {val:'tripoli', label:'مخزون ' + (cur==='USD'?'$':'€') + ' - طرابلس'},
+      {val:'misrata', label:'مخزون ' + (cur==='USD'?'$':'€') + ' - مصراتة'},
+      {val:'turkey',  label:'مخزون ' + (cur==='USD'?'$':'€') + ' - تركيا'},
+      {val:'dubai',   label:'مخزون ' + (cur==='USD'?'$':'€') + ' - دبي'},
+    ];
+  }
+  fromSel.innerHTML = options.map(o=>`<option value="${o.val}">${o.label}</option>`).join('');
+  toSel.innerHTML = options.map((o,i)=>`<option value="${o.val}" ${i===1?'selected':''}>${o.label}</option>`).join('');
+  // Update radio borders
+  document.querySelectorAll('input[name="tr_currency"]').forEach(r=>{
+    r.closest('label').style.borderColor = r.checked ? 'var(--primary)' : 'var(--border)';
+  });
+}
+
+function toggleCommissionRate(){
+  const cur = document.getElementById('tr_commission_currency')?.value || 'LYD';
+  const rateField = document.getElementById('tr_commission_rate_field');
+  if(rateField) rateField.style.display = cur === 'LYD' ? 'none' : '';
+}
+
+function addTransfer(){
+  const date = document.getElementById('tr_date').value;
+  const cur = document.querySelector('input[name="tr_currency"]:checked')?.value || 'LYD';
+  const from = document.getElementById('tr_from').value;
+  const to = document.getElementById('tr_to').value;
+  const amount = parseNum(document.getElementById('tr_amount').value);
+  const commission = parseNum(document.getElementById('tr_commission').value);
+  const commissionDir = document.querySelector('input[name="tr_commission_dir"]:checked')?.value || 'none';
+  const desc = document.getElementById('tr_desc').value;
+  if(!date || !amount){alert('بيانات ناقصة'); return;}
+  if(from === to){alert('لا يمكن التحويل لنفس الحساب'); return;}
+
+  // Main transfer entry
+  if(cur === 'LYD'){
+    state.cashTrans.push({id:uid(), date, type:'transfer', accountCode:from, counterAccountCode:to, amount, desc:desc||`تحويل LYD من ${getAccount(from)?.name} إلى ${getAccount(to)?.name}`});
+    cashFilter.accountCode = to;
+    // Auto-apply LYD fee on receiver
+    const destLoc = {1101:'tripoli',1102:'misrata',1103:'turkey',1104:'dubai'}[to];
+    const lydFeeRate = getFeeRate('LYD', destLoc, date);
+    if(lydFeeRate > 0){
+      const fee = Math.round(amount * lydFeeRate * 100) / 100;
+      if(fee > 0){
+        state.journalEntries.push({
+          id: uid(), date,
+          num: 'FEE-' + uid().substr(-4),
+          desc: `رسوم نقد LYD - تحويل وارد إلى ${destLoc}`,
+          lines: [
+            {accountCode: '6203', debit: fee, credit: 0, description: `${(lydFeeRate*100).toFixed(4)}% × ${fmt(amount)} د.ل`},
+            {accountCode: to, debit: 0, credit: fee, description: 'خصم رسوم من النقد الوارد'}
+          ]
+        });
+      }
+    }
+  } else {
+    const sourceTrans = computeSubchannel(from, cur).filter(t=>t.date <= date);
+    let sourceAvg = 0;
+    if(sourceTrans.length > 0){
+      sourceAvg = sourceTrans[sourceTrans.length-1].avgCostAfter;
+    } else {
+      sourceAvg = getOpeningInv(from, cur).avgCost || 0;
+    }
+    state.dollarTrans.push({
+      id:uid(), date, currency:cur, type:'transfer',
+      fromLocation:from, toLocation:to,
+      amount, rate:sourceAvg,
+      desc: desc||`تحويل ${cur} من ${from} إلى ${to} بتكلفة ${sourceAvg.toFixed(4)}`
+    });
+    // Auto-apply fee on receiver side (destination location)
+    const curFeeRate = getFeeRate(cur, to, date);
+    if(curFeeRate > 0){
+      const feeAmt = Math.round(amount * curFeeRate * 100) / 100;
+      if(feeAmt > 0){
+        state.dollarTrans.push({
+          id:uid(), date, currency:cur, type:'fee_out',
+          location:to, amount:feeAmt, rate:sourceAvg,
+          desc:`رسوم ${(curFeeRate*100).toFixed(4)}% على تحويل ${cur} وارد`
+        });
+      }
+    }
+  }
+
+  // Commission entry: skip if commission value is 0 or empty
+  if(commission > 0){
+    const commCurrency = document.getElementById('tr_commission_currency')?.value || 'LYD';
+    const commRate = parseNum(document.getElementById('tr_commission_rate')?.value);
+    const userSelectedBranch = document.getElementById('tr_commission_branch')?.value;
+    // Determine source location: user's choice OR auto-derive from transfer source
+    const autoSourceLocation = (cur === 'LYD') 
+      ? ({1101:'tripoli',1102:'misrata',1103:'turkey',1104:'dubai'})[from]
+      : from;
+    const sourceLocation = userSelectedBranch || autoSourceLocation;
+    const cashAccByLocation = {tripoli:'1101', misrata:'1102', turkey:'1103', dubai:'1104'};
+    const commCash = cashAccByLocation[sourceLocation] || '1101';
+    const num = 'COM-' + uid().substr(-4);
+
+    if(commCurrency === 'LYD'){
+      // LYD commission: simple Dr/Cr cash + revenue/expense
+      if(commissionDir === 'for_us'){
+        state.journalEntries.push({
+          id:uid(), date, num, desc: `عمولة تحويل لنا (د.ل)`,
+          lines: [
+            {accountCode: commCash, debit: commission, credit: 0, description: 'استلام عمولة'},
+            {accountCode: '4202', debit: 0, credit: commission, description: 'إيراد عمولة تحويل'}
+          ]
+        });
+      } else { // on_us
+        state.journalEntries.push({
+          id:uid(), date, num, desc: `عمولة تحويل علينا (د.ل)`,
+          lines: [
+            {accountCode: '6101', debit: commission, credit: 0, description: 'مصروف عمولة تحويل'},
+            {accountCode: commCash, debit: 0, credit: commission, description: 'دفع عمولة'}
+          ]
+        });
+      }
+    } else {
+      // Foreign currency commission (USD/EUR)
+      if(!commRate || commRate <= 0){alert('يرجى إدخال سعر صرف العمولة'); return;}
+      const lydEquivalent = commission * commRate;
+      if(commissionDir === 'for_us'){
+        // Add a synthetic buy: inventory at sourceLocation increases at commRate
+        state.dollarTrans.push({
+          id:uid(), date, currency:commCurrency, type:'buy',
+          location:sourceLocation, amount:commission, rate:commRate,
+          cashAccount:commCash,
+          desc:`عمولة استلمناها بـ ${commCurrency}`
+        });
+        // Then a JE to neutralize cash effect (the "buy" debited cash) and recognize revenue
+        state.journalEntries.push({
+          id:uid(), date, num, desc:`عمولة تحويل لنا (${commCurrency})`,
+          lines: [
+            {accountCode: commCash, debit: lydEquivalent, credit: 0, description: `معادلة دفع العمولة بـ ${commCurrency}`},
+            {accountCode: '4202', debit: 0, credit: lydEquivalent, description: 'إيراد عمولة تحويل'}
+          ]
+        });
+      } else { // on_us
+        // Find current avg cost at source for that currency
+        const sourceTrans = computeSubchannel(sourceLocation, commCurrency).filter(t=>t.date <= date);
+        let avgCost = sourceTrans.length > 0 ? sourceTrans[sourceTrans.length-1].avgCostAfter : getOpeningInv(sourceLocation, commCurrency).avgCost || commRate;
+        // Add a sell at avg cost (no profit/loss)
+        state.dollarTrans.push({
+          id:uid(), date, currency:commCurrency, type:'sell',
+          location:sourceLocation, amount:commission, rate:avgCost,
+          cashAccount:commCash,
+          desc:`عمولة دفعناها بـ ${commCurrency}`
+        });
+        // Compute the LYD value (at sell rate, which equals avg cost so no P&L from this sell)
+        const sellLyd = commission * avgCost;
+        // Then JE: expense + reduce cash (neutralize the sell's cash increase)
+        state.journalEntries.push({
+          id:uid(), date, num, desc:`عمولة تحويل علينا (${commCurrency})`,
+          lines: [
+            {accountCode: '6101', debit: sellLyd, credit: 0, description: 'مصروف عمولة تحويل'},
+            {accountCode: commCash, debit: 0, credit: sellLyd, description: `معادلة استلام مقابل العمولة بـ ${commCurrency}`}
+          ]
+        });
+      }
+    }
+  }
+
+  saveState();
+  render();
+}
+
+function deleteCash(id){
+  if(!confirm('حذف؟'))return;
+  state.cashTrans = state.cashTrans.filter(c=>c.id!==id);
+  saveState();
+  render();
+}
+
+// ============ JOURNAL ENTRIES ============
+let jeEdit = {lines:[{accountCode:'',debit:0,credit:0,description:''},{accountCode:'',debit:0,credit:0,description:''}], date:new Date().toISOString().substr(0,10), num:'', desc:''};
+
+function renderJournal(c){
+  // Build entries: real JEs + synthetic JEs from fee_out (USD/EUR auto-fees)
+  const realEntries = state.journalEntries.slice();
+  const syntheticEntries = [];
+  state.dollarTrans.forEach(t=>{
+    if(t.type === 'fee_out'){
+      const amt = getAmount(t);
+      const lydValue = amt * (t.feeAvgCost || t.rate);
+      const cur = getCurrency(t);
+      const invAcc = (INV_ACC[t.location] || {})[cur];
+      if(invAcc){
+        syntheticEntries.push({
+          id: 'auto_' + t.id,
+          date: t.date,
+          num: 'AUTO-' + t.id.substr(-4),
+          desc: t.desc || `رسوم تلقائية ${cur} - ${t.location}`,
+          _synthetic: true,
+          lines: [
+            {accountCode: '6203', debit: lydValue, credit: 0, description: `قيمة ${fmt(amt)} ${cur==='USD'?'$':'€'} × ${fmt(t.rate,4)}`},
+            {accountCode: invAcc, debit: 0, credit: lydValue, description: `خصم ${fmt(amt)} ${cur==='USD'?'$':'€'} من المخزون`}
+          ]
+        });
+      }
+    }
+  });
+  const entries = [...realEntries, ...syntheticEntries].sort((a,b)=>b.date.localeCompare(a.date));
+  const accOptions = state.accounts.map(a=>`<option value="${a.code}">${a.code} - ${a.name}</option>`).join('');
+  const totalDr = jeEdit.lines.reduce((s,l)=>s+(parseFloat(l.debit)||0),0);
+  const totalCr = jeEdit.lines.reduce((s,l)=>s+(parseFloat(l.credit)||0),0);
+  const balanced = Math.abs(totalDr-totalCr)<0.005 && totalDr>0;
+
+  c.innerHTML = `
+    <div class="section">
+      <div class="section-title">إضافة قيد جديد</div>
+      <div class="form-grid">
+        <div class="form-field"><label>التاريخ</label><input lang="en" type="date" id="je_date" value="${jeEdit.date}" onchange="jeEdit.date=this.value"></div>
+        <div class="form-field"><label>رقم القيد</label><input type="text" id="je_num" value="${jeEdit.num}" onchange="jeEdit.num=this.value" placeholder="تلقائي"></div>
+        <div class="form-field" style="grid-column:span 2"><label>وصف عام</label><input type="text" id="je_desc" value="${jeEdit.desc}" onchange="jeEdit.desc=this.value" placeholder="مثلاً: تسوية شهرية..."></div>
+      </div>
+      <div class="table-wrap" style="margin-bottom:12px">
+        <table>
+          <thead><tr><th style="min-width:200px">الحساب</th><th>مدين</th><th>دائن</th><th>بيان السطر</th><th></th></tr></thead>
+          <tbody id="jeLinesTbody">
+            ${jeEdit.lines.map((l,i)=>`<tr>
+              <td><select onchange="jeEdit.lines[${i}].accountCode=this.value;renderJournal(document.getElementById('content'))" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:13px">
+                <option value="">— اختر —</option>${accOptions}
+              </select></td>
+              <td><input lang="en" type="number" step="0.01" value="${l.debit||''}" onchange="jeEdit.lines[${i}].debit=parseFloat(this.value)||0;renderJournal(document.getElementById('content'))" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:13px;text-align:left;direction:ltr"></td>
+              <td><input lang="en" type="number" step="0.01" value="${l.credit||''}" onchange="jeEdit.lines[${i}].credit=parseFloat(this.value)||0;renderJournal(document.getElementById('content'))" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:13px;text-align:left;direction:ltr"></td>
+              <td><input type="text" value="${l.description||''}" onchange="jeEdit.lines[${i}].description=this.value" placeholder="بيان السطر" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:13px"></td>
+              <td><button class="btn btn-danger btn-sm" onclick="jeEdit.lines.splice(${i},1);renderJournal(document.getElementById('content'))">×</button></td>
+            </tr>`).join('')}
+          </tbody>
+          <tfoot><tr style="background:#fef9c3;font-weight:700">
+            <td>الإجمالي</td>
+            <td class="num">${fmt(totalDr)}</td>
+            <td class="num">${fmt(totalCr)}</td>
+            <td colspan="2" style="text-align:center">${balanced?'<span style="color:#16a34a">✓ متوازن</span>':`<span style="color:#dc2626">فرق: ${fmt(totalDr-totalCr)}</span>`}</td>
+          </tr></tfoot>
+        </table>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost" onclick="jeEdit.lines.push({accountCode:'',debit:0,credit:0,description:''});renderJournal(document.getElementById('content'))">+ سطر</button>
+        <button class="btn btn-primary" onclick="saveJE()" ${balanced?'':'disabled'}>💾 حفظ القيد</button>
+        <button class="btn btn-ghost" onclick="resetJE()">🗑️ مسح</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">سجل القيود (${entries.length})</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>التاريخ</th><th>رقم</th><th>الوصف</th><th>السطور</th><th>إجمالي</th><th></th></tr></thead>
+        <tbody>${entries.length===0?'<tr><td colspan="6" style="text-align:center;padding:30px">لا توجد قيود</td></tr>':entries.map(je=>{
+          const tot = je.lines.reduce((s,l)=>s+(parseFloat(l.debit)||0),0);
+          const summary = je.lines.map(l=>getAccount(l.accountCode)?.name||l.accountCode).slice(0,3).join('، ');
+          const isAuto = je._synthetic;
+                return `<tr style="${isAuto?'background:#fef3c7':''}"><td>${je.date}${isAuto?' <span style="font-size:10px;color:#92400e">[تلقائي]</span>':''}</td><td>${je.num||je.id.substr(0,4)}</td><td>${je.desc||'-'}</td><td style="font-size:12px;color:#64748b">${summary}</td><td class="num">${fmt(tot)}</td><td>${isAuto?'<span style="font-size:10px;color:#92400e">🔒</span>':`<button class="btn btn-danger btn-sm" onclick="deleteJE('${je.id}')">×</button>`}</td></tr>`;
+        }).join('')}</tbody>
+      </table></div>
+    </div>
+  `;
+  // Set dropdowns
+  jeEdit.lines.forEach((l,i)=>{
+    const sel = document.querySelectorAll('#jeLinesTbody tr select')[i];
+    if(sel) sel.value = l.accountCode||'';
+  });
+}
+
+function saveJE(){
+  state.journalEntries.push({id:uid(), date:jeEdit.date, num:jeEdit.num||(state.journalEntries.length+1).toString(), desc:jeEdit.desc, lines:jeEdit.lines.filter(l=>l.accountCode&&(l.debit||l.credit))});
+  saveState();
+  resetJE();
+}
+function resetJE(){jeEdit={lines:[{accountCode:'',debit:0,credit:0,description:''},{accountCode:'',debit:0,credit:0,description:''}], date:new Date().toISOString().substr(0,10), num:'', desc:''};render();}
+function deleteJE(id){if(!confirm('حذف؟'))return;state.journalEntries=state.journalEntries.filter(je=>je.id!==id);saveState();render();}
+
+// ============ TRIAL BALANCE ============
+function renderTB(c){
+  const p = state.currentPeriod;
+  const rows = buildTrialBalance(p);
+  const tot = rows.reduce((s,r)=>({opDr:s.opDr+r.openingDr,opCr:s.opCr+r.openingCr,pDr:s.pDr+r.periodDr,pCr:s.pCr+r.periodCr,cDr:s.cDr+r.closingDr,cCr:s.cCr+r.closingCr}),{opDr:0,opCr:0,pDr:0,pCr:0,cDr:0,cCr:0});
+  c.innerHTML = `
+    <div class="section">
+      <div class="section-title"><span>ميزان المراجعة - ${p}</span>
+        <div class="section-title-actions"><button class="btn btn-ghost btn-sm" onclick="exportTBExcel()">📤 Excel</button><button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ طباعة</button></div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th rowspan="2">الرمز</th><th rowspan="2">اسم الحساب</th><th rowspan="2">الطبيعة</th>
+          <th colspan="2" style="text-align:center">الافتتاحي</th>
+          <th colspan="2" style="text-align:center">حركة الفترة</th>
+          <th colspan="2" style="text-align:center">الختامي</th></tr>
+        <tr><th>مدين</th><th>دائن</th><th>مدين</th><th>دائن</th><th>مدين</th><th>دائن</th></tr></thead>
+        <tbody>${rows.map(r=>`<tr><td>${r.code}</td><td>${r.name}</td><td>${r.nature}</td>
+          <td class="num">${fmt(r.openingDr)}</td><td class="num">${fmt(r.openingCr)}</td>
+          <td class="num">${fmt(r.periodDr)}</td><td class="num">${fmt(r.periodCr)}</td>
+          <td class="num">${fmt(r.closingDr)}</td><td class="num">${fmt(r.closingCr)}</td></tr>`).join('')}</tbody>
+        <tfoot><tr style="background:#fef9c3;font-weight:800"><td colspan="3">الإجماليات</td>
+          <td class="num">${fmt(tot.opDr)}</td><td class="num">${fmt(tot.opCr)}</td>
+          <td class="num">${fmt(tot.pDr)}</td><td class="num">${fmt(tot.pCr)}</td>
+          <td class="num">${fmt(tot.cDr)}</td><td class="num">${fmt(tot.cCr)}</td></tr>
+        <tr style="background:#dcfce7"><td colspan="3">فحص التوازن</td>
+          <td colspan="2" class="num">${fmt(tot.opDr-tot.opCr)}</td>
+          <td colspan="2" class="num">${fmt(tot.pDr-tot.pCr)}</td>
+          <td colspan="2" class="num">${fmt(tot.cDr-tot.cCr)}</td></tr></tfoot>
+      </table></div>
+    </div>
+  `;
+}
+
+// ============ INCOME STATEMENT ============
+function renderIS(c){
+  const p = state.currentPeriod;
+  const is = buildIncomeStatement(p);
+  const row = (code, label) => {const v=is.Revenue[code]||is.COGS[code]||is.Opex[code]||{month:0,ytd:0}; return `<tr><td class="indent">${label}</td><td class="num">${fmt(v.month)}</td><td class="num">${fmt(v.ytd)}</td><td class="num">${fmtPct(v.month/(is.RevTotal.month||1))}</td></tr>`;};
+  c.innerHTML = `
+    <div class="section">
+      <div class="section-title"><span>قائمة الدخل - ${p}</span>
+        <div class="section-title-actions"><button class="btn btn-ghost btn-sm" onclick="exportISExcel()">📤 Excel</button><button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ طباعة</button></div>
+      </div>
+      <div class="table-wrap"><table class="statement-table">
+        <thead><tr><th>البند</th><th>الشهر</th><th>تراكمي</th><th>%</th></tr></thead>
+        <tbody>
+          <tr class="section-row"><td colspan="4">الإيرادات</td></tr>
+          ${row('4101','إيرادات صرف $ - طرابلس')}
+          ${row('4102','إيرادات صرف $ - مصراتة')}
+          ${row('4103','إيرادات صرف $ - تركيا')}
+          ${row('4104','إيرادات صرف $ - دبي')}
+          ${row('4111','إيرادات صرف € - طرابلس')}
+          ${row('4112','إيرادات صرف € - مصراتة')}
+          ${row('4113','إيرادات صرف € - تركيا')}
+          ${row('4114','إيرادات صرف € - دبي')}
+          ${row('4201','إيرادات بدل')}
+          ${row('4202','إيرادات خدمات أخرى')}
+          ${row('4301','فروقات صرف موجبة')}
+          <tr class="subtotal-row"><td>إجمالي الإيرادات</td><td class="num">${fmt(is.RevTotal.month)}</td><td class="num">${fmt(is.RevTotal.ytd)}</td><td>100.00%</td></tr>
+          <tr class="section-row"><td colspan="4">تكلفة المبيعات</td></tr>
+          ${row('5101','تكلفة $ المباع - طرابلس')}
+          ${row('5102','تكلفة $ المباع - مصراتة')}
+          ${row('5103','تكلفة $ المباع - تركيا')}
+          ${row('5104','تكلفة $ المباع - دبي')}
+          ${row('5111','تكلفة € المباع - طرابلس')}
+          ${row('5112','تكلفة € المباع - مصراتة')}
+          ${row('5113','تكلفة € المباع - تركيا')}
+          ${row('5114','تكلفة € المباع - دبي')}
+          <tr class="subtotal-row"><td>إجمالي تكلفة المبيعات</td><td class="num">${fmt(is.COGSTotal.month)}</td><td class="num">${fmt(is.COGSTotal.ytd)}</td><td class="num">${fmtPct(is.COGSTotal.month/(is.RevTotal.month||1))}</td></tr>
+          <tr class="subtotal-row"><td>مجمل الربح</td><td class="num">${fmt(is.GP.month)}</td><td class="num">${fmt(is.GP.ytd)}</td><td class="num">${fmtPct(is.GP.month/(is.RevTotal.month||1))}</td></tr>
+          <tr class="section-row"><td colspan="4">المصاريف التشغيلية</td></tr>
+          ${row('6101','عمولات الأكواد والوسطاء')}
+          ${row('6201','مصاريف بدل المعاملات')}
+          ${row('6203','رسوم نقد (¼ من الألف)')}
+          ${row('6301','مصاريف تشغيلية عامة')}
+          ${row('6499','مصاريف متنوعة وفروقات صرف')}
+          <tr class="subtotal-row"><td>إجمالي المصاريف</td><td class="num">${fmt(is.OpexTotal.month)}</td><td class="num">${fmt(is.OpexTotal.ytd)}</td><td class="num">${fmtPct(is.OpexTotal.month/(is.RevTotal.month||1))}</td></tr>
+          <tr class="total-row"><td>صافي الربح / (الخسارة)</td><td class="num">${fmt(is.NP.month)}</td><td class="num">${fmt(is.NP.ytd)}</td><td class="num">${fmtPct(is.NP.month/(is.RevTotal.month||1))}</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  `;
+}
+
+// ============ BALANCE SHEET ============
+function renderBS(c){
+  const p = state.currentPeriod;
+  const bs = buildBalanceSheet(p);
+  const totalLE = bs.totalLiab + bs.totalEquity;
+  const diff = bs.totalAssets - totalLE;
+  c.innerHTML = `
+    <div class="section">
+      <div class="section-title"><span>قائمة المركز المالي - ${p}</span>
+        <div class="section-title-actions"><button class="btn btn-ghost btn-sm" onclick="exportBSExcel()">📤 Excel</button><button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ طباعة</button></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div><table class="statement-table">
+          <thead><tr><th colspan="2" style="text-align:center">الأصول</th></tr></thead>
+          <tbody>${bs.assets.map(a=>`<tr><td class="indent">${a.name}</td><td class="num">${fmt(a.balance)}</td></tr>`).join('')}
+            <tr class="total-row"><td>إجمالي الأصول</td><td class="num">${fmt(bs.totalAssets)}</td></tr>
+          </tbody>
+        </table></div>
+        <div><table class="statement-table">
+          <thead><tr><th colspan="2" style="text-align:center">الخصوم وحقوق الملكية</th></tr></thead>
+          <tbody>
+            <tr class="section-row"><td colspan="2">الخصوم</td></tr>
+            ${bs.liabilities.map(a=>`<tr><td class="indent">${a.name}</td><td class="num">${fmt(a.balance)}</td></tr>`).join('')}
+            <tr class="subtotal-row"><td>إجمالي الخصوم</td><td class="num">${fmt(bs.totalLiab)}</td></tr>
+            <tr class="section-row"><td colspan="2">حقوق الملكية</td></tr>
+            ${bs.equity.map(a=>`<tr><td class="indent">${a.name}</td><td class="num">${fmt(a.balance)}</td></tr>`).join('')}
+            <tr><td class="indent">صافي ربح الفترة</td><td class="num">${fmt(bs.currentProfit)}</td></tr>
+            <tr class="subtotal-row"><td>إجمالي حقوق الملكية</td><td class="num">${fmt(bs.totalEquity)}</td></tr>
+            <tr class="total-row"><td>إجمالي الخصوم وحقوق الملكية</td><td class="num">${fmt(totalLE)}</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="alert ${Math.abs(diff)<1?'alert-success':'alert-warning'}" style="margin-top:12px">
+        ${Math.abs(diff)<1?'✓ الميزانية متوازنة':`⚠️ فرق غير صفري: ${fmt(diff)} د.ل`}
+      </div>
+    </div>
+  `;
+}
+
+// ============ CHART OF ACCOUNTS ============
+function renderCOA(c){
+  const grouped = {};
+  state.accounts.forEach(a=>{if(!grouped[a.type])grouped[a.type]=[];grouped[a.type].push(a);});
+  const typeColors = {'أصل':'#dcfce7','خصم':'#fef3c7','حقوق ملكية':'#dbeafe','إيراد':'#bbf7d0','تكلفة':'#fed7aa','مصروف':'#fecaca'};
+  c.innerHTML = `
+    <div class="section">
+      <div class="section-title"><span>دليل الحسابات (${state.accounts.length})</span>
+        <button class="btn btn-primary btn-sm" onclick="openAccountForm()">+ إضافة حساب</button>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>الرمز</th><th>الاسم</th><th>النوع</th><th>الطبيعة</th><th>المجموعة</th><th></th></tr></thead>
+        <tbody>${Object.keys(grouped).flatMap(type=>grouped[type].map(a=>
+          `<tr style="background:${typeColors[type]||'#fff'}"><td>${a.code}</td><td>${a.name}</td><td>${a.type}</td><td>${a.nature}</td><td>${a.group}</td>
+          <td><button class="btn btn-ghost btn-sm" onclick="editAccount('${a.code}')">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteAccount('${a.code}')">×</button></td></tr>`
+        )).join('')}</tbody>
+      </table></div>
+    </div>
+  `;
+}
+
+function openAccountForm(){
+  const code = prompt('رمز الحساب (مثلاً 1601):'); if(!code) return;
+  if(getAccount(code)){alert('الرمز موجود مسبقاً'); return;}
+  const name = prompt('اسم الحساب:'); if(!name) return;
+  const type = prompt('النوع (أصل/خصم/حقوق ملكية/إيراد/تكلفة/مصروف):'); if(!type) return;
+  const nature = ['أصل','تكلفة','مصروف'].includes(type)?'مدين':'دائن';
+  const group = prompt('المجموعة:','عام') || 'عام';
+  state.accounts.push({code, name, type, nature, group});
+  saveState(); render();
+}
+function editAccount(code){
+  const a = getAccount(code); if(!a) return;
+  const newName = prompt('اسم الحساب:', a.name); if(newName===null) return;
+  a.name = newName;
+  saveState(); render();
+}
+function deleteAccount(code){
+  if(!confirm('حذف هذا الحساب؟ تأكد أنه غير مستخدم')) return;
+  state.accounts = state.accounts.filter(a=>a.code!==code);
+  saveState(); render();
+}
+
+// ============ SETTINGS ============
+function renderSettings(c){
+  const s = state.settings;
+  const od = s.openingDollar;
+  c.innerHTML = `
+    <div class="section">
+      <div class="section-title">إعدادات النشاط</div>
+      <div class="form-grid">
+        <div class="form-field"><label>اسم النشاط</label><input id="s_name" value="${s.businessName}"></div>
+        <div class="form-field"><label>المحاسب</label><input id="s_acc" value="${s.accountant}"></div>
+        <div class="form-field"><label>بداية السنة المالية</label><input lang="en" type="date" id="s_fy" value="${s.fiscalYearStart}"></div>
+        <div class="form-field"><label>رأس المال (د.ل)</label><input lang="en" type="number" id="s_cap" value="${s.capital}"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">معدلات الرسوم على دخول النقد</div>
+      <p style="color:var(--text-light);font-size:13px;margin-bottom:12px">معدل الرسوم (%) وتاريخ بدء السريان لكل عملة في كل فرع. الرسوم تُطبق تلقائياً على كل دخول للعملة في الفرع المحدد.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>العملة</th><th>الفرع</th><th>المعدل %</th><th>تاريخ بدء السريان</th><th>= د.ل لكل ألف</th></tr></thead>
+        <tbody>
+          ${['LYD','USD','EUR'].flatMap(cur=>['tripoli','misrata','turkey','dubai'].map(loc=>{
+            const names={tripoli:'طرابلس',misrata:'مصراتة',turkey:'تركيا',dubai:'دبي'};
+            const flags={tripoli:'🇱🇾',misrata:'🇱🇾',turkey:'🇹🇷',dubai:'🇦🇪'};
+            const key = cur+'_'+loc;
+            const cfg = state.settings.feeRates?.[key] || {rate:0, effectiveDate:'2026-06-01'};
+            const sym = cur==='LYD'?'د.ل':cur==='USD'?'$':'€';
+            const colors = {LYD:'#dcfce7', USD:'#dbeafe', EUR:'#fef3c7'};
+            return `<tr style="background:${colors[cur]}">
+              <td style="font-weight:700">${sym} ${cur}</td>
+              <td>${flags[loc]} ${names[loc]}</td>
+              <td><input lang="en" type="text" inputmode="decimal" value="${(cfg.rate||0)*100}" placeholder="0.025"
+                onblur="setFeeRate('${cur}','${loc}','rate',parseNum(this.value)/100)"
+                style="width:90px;padding:6px;border:1px solid var(--border);border-radius:4px;text-align:left;direction:ltr"></td>
+              <td><input lang="en" type="date" value="${cfg.effectiveDate||'2026-06-01'}"
+                onchange="setFeeRate('${cur}','${loc}','effectiveDate',this.value)"
+                style="padding:6px;border:1px solid var(--border);border-radius:4px;font-family:inherit"></td>
+              <td class="num" style="font-weight:600">${fmt((cfg.rate||0)*1000)} د.ل</td>
+            </tr>`;
+          })).join('')}
+        </tbody>
+      </table></div>
+      <div id="feeRateSaveStatus" style="margin-top:8px;padding:8px;background:#dcfce7;color:#166534;border-radius:6px;font-size:13px;text-align:center;display:none">✓ تم الحفظ</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">الأرصدة الافتتاحية للعملات الأجنبية</div>
+      <p style="color:var(--text-light);font-size:13px;margin-bottom:12px">أدخل الرصيد الافتتاحي ومتوسط التكلفة لكل عملة في كل فرع. الحفظ تلقائي عند الخروج من الحقل. يقبل الفواصل (115,034) والأرقام السالبة.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>الفرع</th><th>العملة</th><th>الرصيد بالعملة</th><th>متوسط التكلفة (LYD/وحدة)</th><th>القيمة بالدينار</th></tr></thead>
+        <tbody>
+          ${['tripoli','misrata','turkey','dubai'].flatMap(loc=>{
+            const names={tripoli:'طرابلس',misrata:'مصراتة',turkey:'تركيا',dubai:'دبي'};
+            const flags={tripoli:'🇱🇾',misrata:'🇱🇾',turkey:'🇹🇷',dubai:'🇦🇪'};
+            return ['USD','EUR'].map(cur=>{
+              const op = (state.settings.openingCurrency && state.settings.openingCurrency[loc] && state.settings.openingCurrency[loc][cur]) || {amount:0, avgCost:0};
+              const bg = cur==='USD' ? '#eff6ff' : '#fffbeb';
+              return `<tr style="background:${bg}">
+                <td style="font-weight:700">${flags[loc]} ${names[loc]}</td>
+                <td><span class="badge" style="background:${cur==='USD'?'#dbeafe':'#fef3c7'};color:${cur==='USD'?'#1e40af':'#92400e'}">${cur==='USD'?'$':'€'} ${cur}</span></td>
+                <td><input lang="en" type="text" inputmode="decimal" value="${op.amount||''}" placeholder="0.00"
+                  onblur="setOpeningCurrency('${loc}','${cur}','amount',this.value);renderSettings(document.getElementById('content'))"
+                  style="width:160px;padding:6px;border:1px solid var(--border);border-radius:4px;text-align:left;direction:ltr;font-family:inherit"></td>
+                <td><input lang="en" type="text" inputmode="decimal" value="${op.avgCost||''}" placeholder="0.0000"
+                  onblur="setOpeningCurrency('${loc}','${cur}','avgCost',this.value);renderSettings(document.getElementById('content'))"
+                  style="width:140px;padding:6px;border:1px solid var(--border);border-radius:4px;text-align:left;direction:ltr;font-family:inherit"></td>
+                <td class="num" style="font-weight:700">${fmt(op.amount * op.avgCost)}</td>
+              </tr>`;
+            });
+          }).join('')}
+        </tbody>
+      </table></div>
+      <div id="currencySaveStatus" style="margin-top:8px;padding:8px;background:#dcfce7;color:#166534;border-radius:6px;font-size:13px;text-align:center;display:none">✓ تم الحفظ</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">الأرصدة الافتتاحية للحسابات (د.ل)</div>
+      <p style="color:var(--text-light);font-size:13px;margin-bottom:12px">أدخل الرصيد الافتتاحي لأي حساب بالدينار. (مدين = موجب، دائن = سالب). إجمالي المدين يجب أن يساوي إجمالي الدائن.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>رمز</th><th>اسم الحساب</th><th>النوع</th><th>مدين</th><th>دائن</th></tr></thead>
+        <tbody>${state.accounts.filter(a=>a.type!=='إيراد'&&a.type!=='تكلفة'&&a.type!=='مصروف').map(a=>{
+          const ob = state.settings.openingBalances[a.code] || {debit:0, credit:0};
+          return `<tr><td>${a.code}</td><td>${a.name}</td><td>${a.type}</td>
+            <td><input lang="en" type="text" inputmode="decimal" value="${ob.debit||''}" onblur="setOB('${a.code}','debit',this.value);this.value=(state.settings.openingBalances['${a.code}']||{}).debit||''" style="width:140px;padding:6px;border:1px solid var(--border);border-radius:4px;text-align:left;direction:ltr;font-family:inherit"></td>
+            <td><input lang="en" type="text" inputmode="decimal" value="${ob.credit||''}" onblur="setOB('${a.code}','credit',this.value);this.value=(state.settings.openingBalances['${a.code}']||{}).credit||''" style="width:140px;padding:6px;border:1px solid var(--border);border-radius:4px;text-align:left;direction:ltr;font-family:inherit"></td></tr>`;
+        }).join('')}</tbody>
+        <tfoot><tr style="background:#fef9c3;font-weight:700">
+          <td colspan="3">إجمالي</td>
+          <td class="num" id="obTotalDr">${fmt(Object.values(state.settings.openingBalances).reduce((s,o)=>s+(o.debit||0),0))}</td>
+          <td class="num" id="obTotalCr">${fmt(Object.values(state.settings.openingBalances).reduce((s,o)=>s+(o.credit||0),0))}</td>
+        </tr></tfoot>
+      </table></div>
+      <div id="obBalCheck" style="margin-top:8px;padding:10px;border-radius:8px;font-weight:700;text-align:center"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🔒 كلمة سر الإعدادات</div>
+      <p style="color:var(--text-light);font-size:13px;margin-bottom:12px">${getSettingsPasswordHash() ? 'الإعدادات محمية حالياً بكلمة سر. أدخلها كل مرة تفتح فيها هذه الصفحة.' : 'الإعدادات غير محمية حالياً. يمكنك تعيين كلمة سر تُطلب عند الدخول.'}<br><small style="color:#dc2626">⚠️ هذه حماية محلية فقط - يمكن تجاوزها من أدوات المتصفح. للحماية الفعلية استخدم قفل الجهاز.</small></p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="changeSettingsPassword()">${getSettingsPasswordHash() ? '✏️ تغيير كلمة السر' : '➕ تعيين كلمة سر'}</button>
+        ${getSettingsPasswordHash() ? '<button class="btn btn-danger" onclick="removeSettingsPassword()">🗑️ إزالة كلمة السر</button>' : ''}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">النسخ الاحتياطي</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="exportBackup()">💾 تحميل نسخة JSON</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('importInput').click()">📥 استيراد JSON</button>
+        <button class="btn btn-success" onclick="reimportSeed()">🔄 إعادة استيراد بياناتي الأصلية</button>
+        <button class="btn btn-warning" onclick="if(confirm('حذف الكل؟'))clearAll()">🗑️ حذف الكل</button>
+        <input type="file" id="importInput" accept=".json" style="display:none" onchange="importBackup(this.files[0])">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">إحصائيات</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
+        <div style="padding:14px;background:#f1f5f9;border-radius:8px"><strong>${state.dollarTrans.length}</strong> حركة دولار</div>
+        <div style="padding:14px;background:#f1f5f9;border-radius:8px"><strong>${state.cashTrans.length}</strong> حركة نقدية</div>
+        <div style="padding:14px;background:#f1f5f9;border-radius:8px"><strong>${state.journalEntries.length}</strong> قيد يومية</div>
+        <div style="padding:14px;background:#f1f5f9;border-radius:8px"><strong>${state.accounts.length}</strong> حساب</div>
+      </div>
+    </div>
+  `;
+}
+
+
+// Parse a number robustly (handles commas, spaces, English/Arabic digits)
+function parseNum(v){
+  if(v === null || v === undefined) return 0;
+  let s = String(v).trim();
+  // Convert Arabic-Indic digits to Western
+  s = s.replace(/[٠-٩]/g, d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
+  // Remove commas, spaces, and any non-numeric chars (except dot and minus)
+  s = s.replace(/[^0-9.\-]/g, '');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function setODollar(key, side, value){
+  const num = parseNum(value);
+  if(!state.settings.openingDollar) state.settings.openingDollar = {};
+  if(!state.settings.openingDollar[key]) state.settings.openingDollar[key] = {usd:0, avgCost:0};
+  state.settings.openingDollar[key][side] = num;
+  saveState();
+}
+
+function setFeeRate(currency, location, field, value){
+  if(!state.settings.feeRates) state.settings.feeRates = {};
+  const key = currency + '_' + location;
+  if(!state.settings.feeRates[key]) state.settings.feeRates[key] = {rate:0, effectiveDate:'2026-06-01'};
+  state.settings.feeRates[key][field] = value;
+  saveState();
+  const status = document.getElementById('feeRateSaveStatus');
+  if(status){status.style.display='block'; setTimeout(()=>status.style.display='none', 1500);}
+}
+
+function setOpeningCurrency(location, currency, field, value){
+  const num = parseNum(value);
+  if(!state.settings.openingCurrency) state.settings.openingCurrency = {};
+  if(!state.settings.openingCurrency[location]) state.settings.openingCurrency[location] = {};
+  if(!state.settings.openingCurrency[location][currency]) state.settings.openingCurrency[location][currency] = {amount:0, avgCost:0};
+  state.settings.openingCurrency[location][currency][field] = num;
+  // Keep legacy openingDollar in sync for USD (backward compat)
+  if(currency === 'USD'){
+    if(!state.settings.openingDollar) state.settings.openingDollar = {};
+    if(!state.settings.openingDollar[location]) state.settings.openingDollar[location] = {usd:0, avgCost:0};
+    state.settings.openingDollar[location][field === 'amount' ? 'usd' : field] = num;
+  }
+  saveState();
+  const status = document.getElementById('currencySaveStatus');
+  if(status){ status.style.display='block'; setTimeout(()=>status.style.display='none', 1500); }
+}
+
+function setOB(code, side, value){
+  if(!state.settings.openingBalances[code]) state.settings.openingBalances[code] = {debit:0, credit:0};
+  state.settings.openingBalances[code][side] = parseNum(value);
+  // Update totals in place
+  const totDr = Object.values(state.settings.openingBalances).reduce((s,o)=>s+(o.debit||0),0);
+  const totCr = Object.values(state.settings.openingBalances).reduce((s,o)=>s+(o.credit||0),0);
+  const elDr = document.getElementById('obTotalDr'); if(elDr) elDr.textContent = fmt(totDr);
+  const elCr = document.getElementById('obTotalCr'); if(elCr) elCr.textContent = fmt(totCr);
+  const elChk = document.getElementById('obBalCheck');
+  if(elChk){
+    if(Math.abs(totDr-totCr) < 0.01){
+      elChk.textContent = '✓ متوازن - مدين = دائن'; elChk.style.background='#dcfce7'; elChk.style.color='#166534';
+    } else {
+      elChk.textContent = `⚠ فرق: ${fmt(totDr-totCr)} د.ل (مدين-دائن)`; elChk.style.background='#fef3c7'; elChk.style.color='#92400e';
+    }
+  }
+  saveState();
+}
+
+function saveSettings(){
+  const s = state.settings;
+  s.businessName = document.getElementById('s_name').value;
+  s.accountant = document.getElementById('s_acc').value;
+  s.fiscalYearStart = document.getElementById('s_fy').value;
+  s.capital = parseNum(document.getElementById('s_cap').value);
+  // openingDollar already saved per-field via setODollar (auto-save on blur)
+  saveState();
+  alert('تم الحفظ ✓');
+  render();
+}
+
+function clearAll(){localStorage.removeItem(STORAGE_KEY);location.reload();}
+
+function changeSettingsPassword(){
+  const current = getSettingsPasswordHash();
+  if(current){
+    const oldPwd = prompt('🔒 أدخل كلمة السر الحالية للتغيير:');
+    if(oldPwd === null) return;
+    if(simpleHash(oldPwd) !== current){
+      alert('❌ كلمة السر القديمة غير صحيحة');
+      return;
+    }
+  }
+  const newPwd = prompt(current ? '✏️ أدخل كلمة السر الجديدة (4 أحرف على الأقل):' : '➕ أدخل كلمة سر جديدة (4 أحرف على الأقل):');
+  if(newPwd === null || newPwd === '') return;
+  if(newPwd.length < 4){alert('كلمة السر يجب أن تكون 4 أحرف على الأقل'); return;}
+  const confirm2 = prompt('🔄 أعد إدخال كلمة السر للتأكيد:');
+  if(confirm2 !== newPwd){alert('❌ كلمتا السر غير متطابقتين'); return;}
+  setSettingsPassword(newPwd);
+  settingsUnlocked = true;
+  alert('✅ تم تعيين كلمة السر بنجاح');
+  render();
+}
+
+function removeSettingsPassword(){
+  const current = getSettingsPasswordHash();
+  if(!current){alert('لا توجد كلمة سر حالياً'); return;}
+  const oldPwd = prompt('🔓 أدخل كلمة السر الحالية لإزالتها:');
+  if(oldPwd === null) return;
+  if(simpleHash(oldPwd) !== current){
+    alert('❌ كلمة السر غير صحيحة');
+    return;
+  }
+  if(!confirm('متأكد من إزالة كلمة السر؟ الإعدادات ستصبح متاحة للجميع.')) return;
+  setSettingsPassword('');
+  settingsUnlocked = false;
+  alert('✅ تمت إزالة كلمة السر');
+  render();
+}
+function reimportSeed(){
+  alert('لا توجد بيانات تاريخية مدمجة في هذا الإصدار. ابدأ بإدخال الأرصدة الافتتاحية من قسم الإعدادات.');
+}
+
+function exportBackup(){
+  const blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `backup-${new Date().toISOString().substr(0,10)}.json`; a.click();
+}
+function importBackup(file){
+  if(!file) return;
+  const r = new FileReader();
+  r.onload = e=>{try{const data=JSON.parse(e.target.result); if(confirm('استبدال البيانات؟')){state={...state,...data};saveState();location.reload();}}catch(err){alert('ملف غير صالح');}};
+  r.readAsText(file);
+}
+
+// ============ EXPORT TO EXCEL ============
+function dlExcel(data, fn, sn){
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!rtl'] = true;
+  XLSX.utils.book_append_sheet(wb, ws, sn);
+  XLSX.writeFile(wb, fn);
+}
+function exportTBExcel(){
+  const rows = buildTrialBalance(state.currentPeriod);
+  dlExcel([['ميزان المراجعة',state.currentPeriod],[],['الرمز','اسم الحساب','الطبيعة','مدين افتتاحي','دائن افتتاحي','مدين الفترة','دائن الفترة','مدين ختامي','دائن ختامي'],
+    ...rows.map(r=>[r.code,r.name,r.nature,r.openingDr,r.openingCr,r.periodDr,r.periodCr,r.closingDr,r.closingCr])
+  ], `TB_${state.currentPeriod}.xlsx`, 'TB');
+}
+function exportISExcel(){
+  const is = buildIncomeStatement(state.currentPeriod);
+  const row = (code,label) => {const v=is.Revenue[code]||is.COGS[code]||is.Opex[code]||{month:0,ytd:0};return [label,v.month,v.ytd];};
+  dlExcel([
+    ['قائمة الدخل',state.currentPeriod],[],['البند','الشهر','تراكمي'],
+    ['الإيرادات','',''],
+    row('4101','إيرادات صرف - أرضه طرابلس'),
+    row('4102','إيرادات صرف - أرضه مصراتة'),
+    row('4103','إيرادات صرف - تركيا'),
+    row('4201','إيرادات بدل'),
+    ['إجمالي الإيرادات',is.RevTotal.month,is.RevTotal.ytd],
+    ['تكلفة المبيعات','',''],
+    row('5101','تكلفة - أرضه طرابلس'),
+    row('5102','تكلفة - أرضه مصراتة'),
+    row('5103','تكلفة - تركيا'),
+    ['إجمالي تكلفة المبيعات',is.COGSTotal.month,is.COGSTotal.ytd],
+    ['مجمل الربح',is.GP.month,is.GP.ytd],
+    ['المصاريف','',''],
+    ...['6101','6201','6203','6301','6499'].map(c=>row(c, getAccount(c)?.name||c)),
+    ['إجمالي المصاريف',is.OpexTotal.month,is.OpexTotal.ytd],
+    ['صافي الربح',is.NP.month,is.NP.ytd],
+  ], `IS_${state.currentPeriod}.xlsx`, 'IS');
+}
+function exportBSExcel(){
+  const bs = buildBalanceSheet(state.currentPeriod);
+  dlExcel([['قائمة المركز المالي',state.currentPeriod],[],['البند','القيمة'],['الأصول',''],
+    ...bs.assets.map(a=>[a.name,a.balance]),
+    ['إجمالي الأصول',bs.totalAssets],[],
+    ['الخصوم',''],
+    ...bs.liabilities.map(a=>[a.name,a.balance]),
+    ['إجمالي الخصوم',bs.totalLiab],
+    ['حقوق الملكية',''],
+    ...bs.equity.map(a=>[a.name,a.balance]),
+    ['صافي ربح الفترة',bs.currentProfit],
+    ['إجمالي حقوق الملكية',bs.totalEquity],
+    ['إجمالي الخصوم + حقوق الملكية',bs.totalLiab+bs.totalEquity],
+  ], `BS_${state.currentPeriod}.xlsx`, 'BS');
+}
+function exportDollarToExcel(){
+  const all = ['localTripoli','localMisrata','turkey'].flatMap(k=>computeSubchannel(k)).sort((a,b)=>a.date.localeCompare(b.date));
+  dlExcel([['التاريخ','القناة','المدينة','النوع','$','السعر','قيمة','تكلفة','ربح','رصيد','متوسط','الوصف'],
+    ...all.map(t=>[t.date,t.channel==='local'?'أرضه':'تركيا',t.city==='tripoli'?'طرابلس':t.city==='misrata'?'مصراتة':'',t.type==='buy'?'شراء':t.type==='sell'?'بيع':'تسوية',t.usd,t.rate,t.type==='buy'?t.usd*t.rate:t.saleValue,t.cogs,t.profit,t.runBal,t.avgCostAfter,t.desc])
+  ], `حركات_الدولار.xlsx`, 'حركات');
+}
+function openBulkImport(){alert('سيتم إضافة استيراد جماعي من Excel في تحديث قادم. للآن استخدم زر "إعادة استيراد بياناتي الأصلية" في الإعدادات.');}
+
+// ============ INIT ============
+
+
+
+
+// ============ REVENUES PAGE ============
+function renderRevenues(c){
+  destroyCharts();
+  const p = state.currentPeriod;
+  const is = buildIncomeStatement(p);
+  
+  // Calculate aggregated currency exchange revenue (all 4101-4114)
+  const currencyExchangeMonth = ['4101','4102','4103','4104','4111','4112','4113','4114']
+    .reduce((s,c)=>s + (is.Revenue[c]?.month||0), 0);
+  const currencyExchangeYtd = ['4101','4102','4103','4104','4111','4112','4113','4114']
+    .reduce((s,c)=>s + (is.Revenue[c]?.ytd||0), 0);
+  
+  const categories = [
+    {code:'4101_GROUP', name:'إيرادات صرف العملات', icon:'💱', color:'#2563eb', bg:'#dbeafe', 
+     desc:'مبيعات الدولار واليورو في كل الفروع (4 فروع × عملتين = 8 حسابات فرعية)',
+     month: currencyExchangeMonth, ytd: currencyExchangeYtd, isGroup: true},
+    {code:'4201', name:'إيرادات بدل المعاملات', icon:'🎫', color:'#f59e0b', bg:'#fef3c7',
+     desc:'عمولات البدل المستلمة على المعاملات',
+     month: is.Revenue['4201']?.month||0, ytd: is.Revenue['4201']?.ytd||0},
+    {code:'4202', name:'إيرادات الخدمات والعمولات', icon:'🤝', color:'#10b981', bg:'#dcfce7',
+     desc:'إيرادات الخدمات الأخرى + عمولات التحويلات + إيجار + رسوم خدمات',
+     month: is.Revenue['4202']?.month||0, ytd: is.Revenue['4202']?.ytd||0},
+    {code:'4301', name:'فروقات صرف وأرباح تسويات', icon:'📈', color:'#8b5cf6', bg:'#ede9fe',
+     desc:'الفروقات الموجبة + أرباح تسوية أرصدة العملات (adjustment gains)',
+     month: is.Revenue['4301']?.month||0, ytd: is.Revenue['4301']?.ytd||0},
+    {code:'4499', name:'إيرادات استثنائية/غير مباشرة', icon:'🎁', color:'#ec4899', bg:'#fce7f3',
+     desc:'مكاسب لمرة واحدة، تعويضات، استرداد، مبيعات أصول قديمة',
+     month: is.Revenue['4499']?.month||0, ytd: is.Revenue['4499']?.ytd||0},
+  ];
+  
+  const grandTotal = categories.reduce((s,c)=>s+c.ytd,0);
+  
+  c.innerHTML = `
+    <div class="section">
+      <div class="section-title">
+        <span>💰 الإيرادات - ${p}</span>
+        <div class="section-title-actions">
+          <span style="font-size:13px;color:var(--text-light)">إجمالي الإيرادات التراكمي: <b style="color:var(--success);font-size:16px">${fmt(grandTotal)} د.ل</b></span>
+        </div>
+      </div>
+      <p style="color:var(--text-light);font-size:13px;margin-bottom:16px">اضغط أي فئة لعرض كشف تفصيلي بحركاتها. للإيرادات الخارجية/غير المباشرة استخدم اليومية العامة مع حساب 4202 أو 4499.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
+        ${categories.map(c=>`
+          <div onclick="showRevenueStatement('${c.code}')" 
+               style="background:#fff;border:2px solid ${c.color};border-radius:12px;padding:18px;cursor:pointer;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.06)"
+               onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 16px rgba(0,0,0,.1)'"
+               onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 1px 3px rgba(0,0,0,.06)'">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:28px">${c.icon}</span>
+                <div>
+                  <div style="font-size:11px;color:#64748b;font-weight:600">${c.isGroup?'مجمّع':c.code}</div>
+                  <div style="font-size:14px;font-weight:800;color:${c.color}">${c.name}</div>
+                </div>
+              </div>
+              <span style="font-size:10px;color:#64748b">📋 اضغط للتفاصيل</span>
+            </div>
+            <div style="margin:12px 0;padding:10px;background:${c.bg};border-radius:8px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline">
+                <span style="font-size:11px;color:${c.color};font-weight:700">الشهر الحالي</span>
+                <span style="font-size:18px;font-weight:800;color:${c.month>0?c.color:'#94a3b8'};font-family:monospace;direction:ltr">${fmt(c.month)}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,0,0,.08)">
+                <span style="font-size:11px;color:#64748b">تراكمي السنة</span>
+                <span style="font-size:14px;font-weight:700;color:${c.ytd>0?'#1e293b':'#94a3b8'};font-family:monospace;direction:ltr">${fmt(c.ytd)} د.ل</span>
+              </div>
+            </div>
+            <p style="font-size:11px;color:#64748b;margin:0;line-height:1.5">${c.desc}</p>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function showRevenueStatement(accountCode){
+  let accCodes = [];
+  let title = '';
+  if(accountCode === '4101_GROUP'){
+    accCodes = ['4101','4102','4103','4104','4111','4112','4113','4114'];
+    title = 'إيرادات صرف العملات (مجمّع)';
+  } else {
+    accCodes = [accountCode];
+    const acc = getAccount(accountCode);
+    if(!acc) return;
+    title = `${acc.name} (${accountCode})`;
+  }
+  
+  const movements = [];
+  
+  // Iterate journal entries
+  state.journalEntries.forEach(je=>{
+    je.lines.forEach(l=>{
+      if(accCodes.includes(l.accountCode)){
+        const d = parseFloat(l.debit)||0;
+        const cr = parseFloat(l.credit)||0;
+        if(d || cr){
+          const acc = getAccount(l.accountCode);
+          movements.push({
+            date: je.date,
+            type: `قيد ${je._synthetic?'تلقائي':'يدوي'} #${je.num||je.id.substr(0,4)}`,
+            desc: (l.description||je.desc||'') + (accountCode==='4101_GROUP'?` [${acc?.name||l.accountCode}]`:''),
+            dr: d, cr: cr,
+            id: je.id, isAuto: je._synthetic
+          });
+        }
+      }
+    });
+  });
+  
+  // For 4101_GROUP: include sales auto-revenues from dollarTrans
+  if(accountCode === '4101_GROUP'){
+    state.dollarTrans.forEach(t=>{
+      if(t.type === 'sell'){
+        const enriched = computeSubchannel(t.location, getCurrency(t)).find(e=>e.id===t.id);
+        if(enriched){
+          movements.push({
+            date: t.date,
+            type: 'بيع تلقائي',
+            desc: `${fmt(getAmount(t))} ${getCurrency(t)==='USD'?'$':'€'} × ${fmt(t.rate,4)} في ${t.location}`,
+            dr: 0, cr: enriched.saleValue,
+            id: t.id, isAuto: true
+          });
+        }
+      }
+    });
+  }
+  
+  // For 4301: include adjustment gains
+  if(accountCode === '4301'){
+    ['tripoli','misrata','turkey','dubai'].forEach(loc=>{
+      ['USD','EUR'].forEach(cur=>{
+        computeSubchannel(loc, cur).forEach(t=>{
+          if(t.type === 'adjustment' && typeof t.adjustmentDeltaLyd === 'number' && t.adjustmentDeltaLyd > 0){
+            movements.push({
+              date: t.date, type: 'ربح تسوية',
+              desc: `تسوية رصيد ${cur} في ${loc}`,
+              dr: 0, cr: t.adjustmentDeltaLyd,
+              id: t.id, isAuto: true
+            });
+          }
+        });
+      });
+    });
+  }
+  
+  movements.sort((a,b)=>a.date.localeCompare(b.date));
+  let bal = 0;
+  movements.forEach(m=>{ bal += (m.cr||0) - (m.dr||0); m.bal = bal; });
+  
+  const totalDr = movements.reduce((s,m)=>s+(m.dr||0),0);
+  const totalCr = movements.reduce((s,m)=>s+(m.cr||0),0);
+  const finalBal = totalCr - totalDr;
+  
+  const modal = document.getElementById('modal');
+  const content = document.getElementById('modalContent');
+  if(!modal || !content) return;
+  
+  content.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:2px solid #10b981;padding-bottom:10px">
+      <h3 style="margin:0;color:#10b981;font-size:18px">💰 كشف إيرادات: ${title}</h3>
+      <button onclick="document.getElementById('modal').classList.remove('show')" style="background:#ef4444;color:#fff;border:none;border-radius:50%;width:32px;height:32px;font-size:18px;cursor:pointer;font-weight:700">×</button>
+    </div>
+    <div style="margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap">
+      <div style="padding:10px 16px;background:#dcfce7;border-radius:8px;font-weight:700;flex:1;min-width:120px;text-align:center">
+        <div style="font-size:11px;color:#166534">إجمالي دائن (إيرادات)</div>
+        <div style="font-size:18px;color:#16a34a;font-family:monospace;direction:ltr">${fmt(totalCr)}</div>
+      </div>
+      <div style="padding:10px 16px;background:#fee2e2;border-radius:8px;font-weight:700;flex:1;min-width:120px;text-align:center">
+        <div style="font-size:11px;color:#991b1b">إجمالي مدين (تخفيضات)</div>
+        <div style="font-size:18px;color:#dc2626;font-family:monospace;direction:ltr">${fmt(totalDr)}</div>
+      </div>
+      <div style="padding:10px 16px;background:#f1f5f9;border-radius:8px;font-weight:700;flex:1;min-width:120px;text-align:center">
+        <div style="font-size:11px;color:#64748b">صافي الإيراد</div>
+        <div style="font-size:18px;color:#0f172a;font-family:monospace;direction:ltr">${fmt(finalBal)}</div>
+      </div>
+    </div>
+    <div style="max-height:60vh;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead style="background:#10b981;color:#fff;position:sticky;top:0">
+          <tr><th style="padding:8px;text-align:right">التاريخ</th><th style="padding:8px;text-align:right">النوع</th><th style="padding:8px;text-align:right">البيان</th><th style="padding:8px;text-align:left">مدين</th><th style="padding:8px;text-align:left">دائن</th><th style="padding:8px;text-align:left">الرصيد</th></tr>
+        </thead>
+        <tbody>
+          ${movements.length === 0 ? '<tr><td colspan="6" style="text-align:center;padding:30px;color:#94a3b8">لا توجد حركات لهذا الحساب</td></tr>' :
+            movements.map(m=>`
+            <tr style="border-bottom:1px solid #f1f5f9;${m.isAuto?'background:#dcfce7':''}">
+              <td style="padding:6px 8px">${m.date}${m.isAuto?' <span style="font-size:10px;color:#166534">[تلقائي]</span>':''}</td>
+              <td style="padding:6px 8px;font-size:11px">${m.type}</td>
+              <td style="padding:6px 8px;font-size:11px;color:#64748b">${m.desc||''}</td>
+              <td style="padding:6px 8px;text-align:left;font-family:monospace;color:#dc2626;direction:ltr">${m.dr?fmt(m.dr):'—'}</td>
+              <td style="padding:6px 8px;text-align:left;font-family:monospace;color:#16a34a;direction:ltr">${m.cr?fmt(m.cr):'—'}</td>
+              <td style="padding:6px 8px;text-align:left;font-family:monospace;font-weight:700;direction:ltr">${fmt(m.bal)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ طباعة</button>
+      <button class="btn btn-primary btn-sm" onclick="document.getElementById('modal').classList.remove('show')">إغلاق</button>
+    </div>
+  `;
+  content.style.maxWidth = '95vw';
+  content.style.width = '1100px';
+  modal.classList.add('show');
+}
+
+// ============ EXPENSES PAGE ============
+function renderExpenses(c){
+  destroyCharts();
+  const p = state.currentPeriod;
+  const is = buildIncomeStatement(p);
+  
+  // The 5 expense categories with descriptions and icons
+  const categories = [
+    {code:'6101', name:'عمولات الأكواد والوسطاء', icon:'🤝', color:'#ec4899', bg:'#fce7f3', desc:'عمولات تدفعها للأكواد المحلية، الوسطاء، شركاء التحويلات'},
+    {code:'6201', name:'مصاريف بدل المعاملات', icon:'💼', color:'#f59e0b', bg:'#fef3c7', desc:'البدل المدفوع على المعاملات (شحن، رسوم تحويل خارجية)'},
+    {code:'6203', name:'رسوم نقد (¼ من الألف)', icon:'💵', color:'#10b981', bg:'#dcfce7', desc:'الرسوم التلقائية على دخول النقد (تُحسب من معدلات الإعدادات)'},
+    {code:'6301', name:'مصاريف تشغيلية عامة', icon:'🏢', color:'#2563eb', bg:'#dbeafe', desc:'إيجار، كهرباء، رواتب، نقل، اتصالات، مكتبية'},
+    {code:'6499', name:'مصاريف متنوعة وفروقات صرف', icon:'📋', color:'#6b7280', bg:'#f1f5f9', desc:'مصاريف غير مصنفة + خسائر تسوية الأرصدة + فروقات الصرف'},
+  ];
+  
+  // Calculate each category total
+  const totals = categories.map(cat=>{
+    const v = is.Opex[cat.code] || {month:0, ytd:0};
+    return {...cat, monthAmount: v.month, ytdAmount: v.ytd};
+  });
+  const grandTotal = totals.reduce((s,c)=>s+c.ytdAmount,0);
+  
+  c.innerHTML = `
+    <div class="section">
+      <div class="section-title">
+        <span>💸 المصاريف - ${p}</span>
+        <div class="section-title-actions">
+          <span style="font-size:13px;color:var(--text-light)">إجمالي المصاريف التراكمي: <b style="color:var(--danger);font-size:16px">${fmt(grandTotal)} د.ل</b></span>
+        </div>
+      </div>
+      <p style="color:var(--text-light);font-size:13px;margin-bottom:16px">اضغط أي فئة لعرض كشف تفصيلي بحركاتها. الفئات الـ5 تغطي كل أنواع المصاريف.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
+        ${totals.map(c=>`
+          <div onclick="showExpenseStatement('${c.code}')" 
+               style="background:#fff;border:2px solid ${c.color};border-radius:12px;padding:18px;cursor:pointer;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.06)"
+               onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 16px rgba(0,0,0,.1)'"
+               onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 1px 3px rgba(0,0,0,.06)'">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:28px">${c.icon}</span>
+                <div>
+                  <div style="font-size:11px;color:#64748b;font-weight:600">${c.code}</div>
+                  <div style="font-size:14px;font-weight:800;color:${c.color}">${c.name}</div>
+                </div>
+              </div>
+              <span style="font-size:10px;color:#64748b">📋 اضغط للتفاصيل</span>
+            </div>
+            <div style="margin:12px 0;padding:10px;background:${c.bg};border-radius:8px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline">
+                <span style="font-size:11px;color:${c.color};font-weight:700">الشهر الحالي</span>
+                <span style="font-size:18px;font-weight:800;color:${c.monthAmount>0?c.color:'#94a3b8'};font-family:monospace;direction:ltr">${fmt(c.monthAmount)}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,0,0,.08)">
+                <span style="font-size:11px;color:#64748b">تراكمي السنة</span>
+                <span style="font-size:14px;font-weight:700;color:${c.ytdAmount>0?'#1e293b':'#94a3b8'};font-family:monospace;direction:ltr">${fmt(c.ytdAmount)} د.ل</span>
+              </div>
+            </div>
+            <p style="font-size:11px;color:#64748b;margin:0;line-height:1.5">${c.desc}</p>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function showExpenseStatement(accountCode){
+  let acc = getAccount(accountCode);
+  if(!acc){
+    // Fallback: use default name from DEFAULT_ACCOUNTS or generic
+    const defaultNames = {'6101':'عمولات الأكواد والوسطاء','6201':'مصاريف بدل المعاملات','6203':'رسوم نقد (¼ من الألف)','6301':'مصاريف تشغيلية عامة','6499':'مصاريف متنوعة وفروقات صرف'};
+    acc = {code:accountCode, name:defaultNames[accountCode]||('حساب '+accountCode), type:'مصروف'};
+    console.log('Account', accountCode, 'not found in chart, using default name');
+  }
+  
+  const movements = [];
+  
+  // Iterate journal entries for this account
+  state.journalEntries.forEach(je=>{
+    je.lines.forEach(l=>{
+      if(l.accountCode === accountCode){
+        const d = parseFloat(l.debit)||0;
+        const cr = parseFloat(l.credit)||0;
+        if(d || cr){
+          const isSynthetic = je._synthetic;
+          movements.push({
+            date: je.date,
+            type: `قيد ${isSynthetic?'تلقائي':'يدوي'} #${je.num||je.id.substr(0,4)}`,
+            desc: l.description||je.desc||'',
+            dr: d, cr: cr,
+            id: je.id,
+            isAuto: isSynthetic
+          });
+        }
+      }
+    });
+  });
+  
+  // For 6203, also iterate fee_out from dollarTrans
+  if(accountCode === '6203'){
+    state.dollarTrans.forEach(t=>{
+      if(t.type === 'fee_out'){
+        const amt = getAmount(t);
+        const lyd = amt * (t.feeAvgCost || t.rate);
+        const cur = getCurrency(t);
+        movements.push({
+          date: t.date,
+          type: 'رسوم تلقائية',
+          desc: `${fmt(amt)} ${cur==='USD'?'$':'€'} × ${fmt(t.rate,4)} في ${t.location}`,
+          dr: lyd, cr: 0,
+          id: t.id,
+          isAuto: true
+        });
+      }
+    });
+  }
+  
+  // For 6499, include adjustment losses
+  if(accountCode === '6499'){
+    ['tripoli','misrata','turkey','dubai'].forEach(loc=>{
+      ['USD','EUR'].forEach(cur=>{
+        computeSubchannel(loc, cur).forEach(t=>{
+          if(t.type === 'adjustment' && typeof t.adjustmentDeltaLyd === 'number' && t.adjustmentDeltaLyd < 0){
+            movements.push({
+              date: t.date,
+              type: 'خسارة تسوية',
+              desc: `تسوية رصيد ${cur} في ${loc}`,
+              dr: -t.adjustmentDeltaLyd, cr: 0,
+              id: t.id,
+              isAuto: true
+            });
+          }
+        });
+      });
+    });
+  }
+  
+  // Sort by date
+  movements.sort((a,b)=>a.date.localeCompare(b.date));
+  
+  // Running balance
+  let bal = 0;
+  movements.forEach(m=>{
+    bal += (m.dr||0) - (m.cr||0);
+    m.bal = bal;
+  });
+  
+  const totalDr = movements.reduce((s,m)=>s+(m.dr||0),0);
+  const totalCr = movements.reduce((s,m)=>s+(m.cr||0),0);
+  const finalBal = totalDr - totalCr;
+  
+  const modal = document.getElementById('modal');
+  const content = document.getElementById('modalContent');
+  if(!modal || !content) return;
+  
+  content.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:2px solid #dc2626;padding-bottom:10px">
+      <h3 style="margin:0;color:#dc2626;font-size:18px">💸 كشف مصاريف: ${acc.name} (${accountCode})</h3>
+      <button onclick="document.getElementById('modal').classList.remove('show')" style="background:#ef4444;color:#fff;border:none;border-radius:50%;width:32px;height:32px;font-size:18px;cursor:pointer;font-weight:700">×</button>
+    </div>
+    <div style="margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap">
+      <div style="padding:10px 16px;background:#fee2e2;border-radius:8px;font-weight:700;flex:1;min-width:120px;text-align:center">
+        <div style="font-size:11px;color:#991b1b">إجمالي مدين</div>
+        <div style="font-size:18px;color:#dc2626;font-family:monospace;direction:ltr">${fmt(totalDr)}</div>
+      </div>
+      <div style="padding:10px 16px;background:#dcfce7;border-radius:8px;font-weight:700;flex:1;min-width:120px;text-align:center">
+        <div style="font-size:11px;color:#166534">إجمالي دائن</div>
+        <div style="font-size:18px;color:#16a34a;font-family:monospace;direction:ltr">${fmt(totalCr)}</div>
+      </div>
+      <div style="padding:10px 16px;background:#f1f5f9;border-radius:8px;font-weight:700;flex:1;min-width:120px;text-align:center">
+        <div style="font-size:11px;color:#64748b">الرصيد النهائي</div>
+        <div style="font-size:18px;color:#0f172a;font-family:monospace;direction:ltr">${fmt(finalBal)}</div>
+      </div>
+    </div>
+    <div style="max-height:60vh;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead style="background:#dc2626;color:#fff;position:sticky;top:0">
+          <tr>
+            <th style="padding:8px;text-align:right">التاريخ</th>
+            <th style="padding:8px;text-align:right">النوع</th>
+            <th style="padding:8px;text-align:right">البيان</th>
+            <th style="padding:8px;text-align:left">مدين</th>
+            <th style="padding:8px;text-align:left">دائن</th>
+            <th style="padding:8px;text-align:left">الرصيد</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${movements.length === 0 ? '<tr><td colspan="6" style="text-align:center;padding:30px;color:#94a3b8">لا توجد حركات لهذا الحساب</td></tr>' :
+            movements.map(m=>`
+            <tr style="border-bottom:1px solid #f1f5f9;${m.isAuto?'background:#fef3c7':''}">
+              <td style="padding:6px 8px">${m.date}${m.isAuto?' <span style="font-size:10px;color:#92400e">[تلقائي]</span>':''}</td>
+              <td style="padding:6px 8px;font-size:11px">${m.type}</td>
+              <td style="padding:6px 8px;font-size:11px;color:#64748b">${m.desc||''}</td>
+              <td style="padding:6px 8px;text-align:left;font-family:monospace;color:#dc2626;direction:ltr">${m.dr?fmt(m.dr):'—'}</td>
+              <td style="padding:6px 8px;text-align:left;font-family:monospace;color:#16a34a;direction:ltr">${m.cr?fmt(m.cr):'—'}</td>
+              <td style="padding:6px 8px;text-align:left;font-family:monospace;font-weight:700;direction:ltr">${fmt(m.bal)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ طباعة</button>
+      <button class="btn btn-primary btn-sm" onclick="document.getElementById('modal').classList.remove('show')">إغلاق</button>
+    </div>
+  `;
+  content.style.maxWidth = '95vw';
+  content.style.width = '1100px';
+  modal.classList.add('show');
+}
+
+// ============ ACCOUNT STATEMENT MODAL ============
+function showStatement(currency, location){
+  const names={tripoli:'طرابلس',misrata:'مصراتة',turkey:'تركيا',dubai:'دبي'};
+  const flags={tripoli:'🇱🇾',misrata:'🇱🇾',turkey:'🇹🇷',dubai:'🇦🇪'};
+  const curSym = currency==='LYD' ? 'د.ل' : currency==='USD' ? '$' : '€';
+  const curColor = currency==='LYD' ? '#16a34a' : currency==='USD' ? '#1e40af' : '#92400e';
+  const curBg = currency==='LYD' ? '#dcfce7' : currency==='USD' ? '#dbeafe' : '#fef3c7';
+  
+  const movements = [];
+  
+  if(currency === 'LYD'){
+    // For LYD: get all transactions affecting the cash account (1101/1102/1103/1104)
+    const cashCode = {tripoli:'1101',misrata:'1102',turkey:'1103',dubai:'1104'}[location];
+    const ob = state.settings.openingBalances[cashCode];
+    let runBal = ob ? (ob.debit||0) - (ob.credit||0) : 0;
+    movements.push({date: state.settings.fiscalYearStart||'2026-06-01', type:'رصيد افتتاحي', desc:'الرصيد الافتتاحي', in:runBal>0?runBal:0, out:runBal<0?-runBal:0, bal:runBal, src:'opening'});
+    
+    // Dollar transactions affecting this cash account
+    state.dollarTrans.forEach(t=>{
+      if(t.type === 'adjustment' || t.type === 'transfer' || t.type === 'fee_out') return;
+      const amt = getAmount(t);
+      const lyd = amt * t.rate;
+      const cashAcc = getCashAccount(t);
+      if(cashAcc !== cashCode) return;
+      const cur = getCurrency(t);
+      const sym = cur==='USD'?'$':'€';
+      if(t.type === 'buy'){
+        movements.push({date:t.date, type:`شراء ${sym}`, desc:`${fmt(amt)} ${sym} × ${fmt(t.rate,4)}`, in:0, out:lyd, id:t.id, src:'dollar'});
+      } else if(t.type === 'sell'){
+        movements.push({date:t.date, type:`بيع ${sym}`, desc:`${fmt(amt)} ${sym} × ${fmt(t.rate,4)}`, in:lyd, out:0, id:t.id, src:'dollar'});
+      }
+    });
+    
+    // Cash transactions (transfers and other)
+    state.cashTrans.forEach(c=>{
+      if(c.accountCode === cashCode){
+        const typeName = c.type==='in'?'إيداع':c.type==='out'?'سحب':'تحويل صادر';
+        const dest = c.counterAccountCode ? ' إلى ' + (getAccount(c.counterAccountCode)?.name || '') : '';
+        movements.push({date:c.date, type:typeName, desc:(c.desc||'')+dest, in:c.type==='in'?c.amount:0, out:c.type!=='in'?c.amount:0, id:c.id, src:'cash'});
+      }
+      if(c.type === 'transfer' && c.counterAccountCode === cashCode){
+        const src = ' من ' + (getAccount(c.accountCode)?.name || '');
+        movements.push({date:c.date, type:'تحويل وارد', desc:(c.desc||'')+src, in:c.amount, out:0, id:c.id, src:'cash'});
+      }
+    });
+    
+    // Journal entries
+    state.journalEntries.forEach(je=>{
+      je.lines.forEach(l=>{
+        if(l.accountCode === cashCode){
+          const d = parseFloat(l.debit)||0;
+          const cr = parseFloat(l.credit)||0;
+          if(d || cr){
+            movements.push({date:je.date, type:`قيد #${je.num||je.id.substr(0,4)}`, desc:l.description||je.desc||'', in:d, out:cr, id:je.id, src:'je'});
+          }
+        }
+      });
+    });
+  } else {
+    // For USD/EUR: get all transactions affecting inventory at this location
+    const trans = computeSubchannel(location, currency);
+    const op = getOpeningInv(location, currency);
+    movements.push({date: state.settings.fiscalYearStart||'2026-06-01', type:'رصيد افتتاحي', desc:`الرصيد الافتتاحي بمتوسط ${fmt(op.avgCost,4)}`, in:op.amount>0?op.amount:0, out:op.amount<0?-op.amount:0, bal:op.amount, avgCost:op.avgCost, src:'opening'});
+    
+    trans.forEach(t=>{
+      const amt = getAmount(t);
+      let typeName = '', inAmt = 0, outAmt = 0, descExtra = '';
+      if(t.type === 'buy'){
+        typeName = `شراء ${curSym}`;
+        inAmt = amt;
+        descExtra = ` × ${fmt(t.rate,4)} د.ل`;
+      } else if(t.type === 'sell'){
+        typeName = `بيع ${curSym}`;
+        outAmt = amt;
+        descExtra = ` × ${fmt(t.rate,4)} د.ل`;
+      } else if(t.type === 'transfer'){
+        if(t.fromLocation === location){
+          typeName = `تحويل ${curSym} صادر`;
+          outAmt = amt;
+          descExtra = ` إلى ${names[t.toLocation]||t.toLocation}`;
+        } else if(t.toLocation === location){
+          typeName = `تحويل ${curSym} وارد`;
+          inAmt = amt;
+          descExtra = ` من ${names[t.fromLocation]||t.fromLocation} @ ${fmt(t.rate,4)}`;
+        }
+      } else if(t.type === 'adjustment'){
+        typeName = 'تسوية رصيد';
+        const oldBal = t.runBal !== undefined && amt !== undefined ? amt : 0;
+        // bal change is (amt - prior bal). We can compute prior bal from runBal
+        const priorBal = (t.runBal - 0); // placeholder
+        descExtra = ` ضبط الرصيد إلى ${fmt(amt)} @ ${fmt(t.rate,4)}`;
+        if(amt > 0) inAmt = amt;
+        else outAmt = -amt;
+      } else if(t.type === 'fee_out'){
+        typeName = `رسوم تلقائية`;
+        outAmt = amt;
+        descExtra = ` (${(t.desc||'').replace('رسوم ','').replace(/[^0-9.%×$€ المت سط]/g,'')})`;
+      }
+      if(typeName){
+        movements.push({date:t.date, type:typeName, desc:(t.desc||'').substring(0,40)+descExtra, in:inAmt, out:outAmt, runBal:t.runBal, avgCost:t.avgCostAfter, id:t.id, src:'dollar'});
+      }
+    });
+  }
+  
+  // Sort by date
+  movements.sort((a,b)=>{
+    if(a.src === 'opening') return -1;
+    if(b.src === 'opening') return 1;
+    return a.date.localeCompare(b.date);
+  });
+  
+  // Compute running balance for non-opening rows
+  let bal = currency==='LYD' ? movements[0]?.bal||0 : getOpeningInv(location, currency).amount;
+  movements.forEach((m,i)=>{
+    if(m.src === 'opening'){m.bal = bal; return;}
+    if(currency === 'LYD'){
+      bal += (m.in||0) - (m.out||0);
+    } else {
+      // For USD/EUR, use runBal from computeSubchannel for accuracy
+      bal = m.runBal !== undefined ? m.runBal : bal + (m.in||0) - (m.out||0);
+    }
+    m.bal = bal;
+  });
+  
+  const totalIn = movements.filter(m=>m.src !== 'opening').reduce((s,m)=>s+(m.in||0),0);
+  const totalOut = movements.filter(m=>m.src !== 'opening').reduce((s,m)=>s+(m.out||0),0);
+  const finalBal = movements[movements.length-1]?.bal || 0;
+  
+  const modal = document.getElementById('modal');
+  const content = document.getElementById('modalContent');
+  if(!modal || !content) return;
+  
+  content.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:2px solid ${curColor};padding-bottom:10px">
+      <h3 style="margin:0;color:${curColor};font-size:18px">
+        ${flags[location]} كشف حساب - فرع ${names[location]} - ${curSym} ${currency}
+      </h3>
+      <button onclick="document.getElementById('modal').classList.remove('show')" style="background:#ef4444;color:#fff;border:none;border-radius:50%;width:32px;height:32px;font-size:18px;cursor:pointer;font-weight:700">×</button>
+    </div>
+    <div style="margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between">
+      <div style="padding:8px 12px;background:${curBg};border-radius:8px;font-weight:700">
+        إجمالي وارد: <span style="font-family:monospace;direction:ltr" class="num">${fmt(totalIn)}</span>
+      </div>
+      <div style="padding:8px 12px;background:#fee2e2;border-radius:8px;font-weight:700">
+        إجمالي صادر: <span style="font-family:monospace;direction:ltr" class="num">${fmt(totalOut)}</span>
+      </div>
+      <div style="padding:8px 12px;background:${finalBal<0?'#fee2e2':'#dcfce7'};border-radius:8px;font-weight:700">
+        الرصيد النهائي: <span style="font-family:monospace;direction:ltr" class="num" style="color:${finalBal<0?'#dc2626':'#166534'}">${fmt(finalBal)}</span>
+      </div>
+    </div>
+    <div style="max-height:60vh;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead style="background:${curColor};color:#fff;position:sticky;top:0">
+          <tr>
+            <th style="padding:8px;text-align:right">التاريخ</th>
+            <th style="padding:8px;text-align:right">النوع</th>
+            <th style="padding:8px;text-align:right">البيان</th>
+            <th style="padding:8px;text-align:left">وارد</th>
+            <th style="padding:8px;text-align:left">صادر</th>
+            <th style="padding:8px;text-align:left">الرصيد</th>
+            ${currency!=='LYD'?'<th style="padding:8px;text-align:left">المتوسط</th>':''}
+          </tr>
+        </thead>
+        <tbody>
+          ${movements.length === 0 ? '<tr><td colspan="7" style="text-align:center;padding:20px;color:#94a3b8">لا توجد حركات</td></tr>' :
+            movements.map(m=>`
+            <tr style="border-bottom:1px solid #f1f5f9;${m.src==='opening'?'background:#fef9c3;font-weight:700':''}">
+              <td style="padding:6px 8px">${m.date}</td>
+              <td style="padding:6px 8px"><span style="font-size:11px">${m.type}</span></td>
+              <td style="padding:6px 8px;font-size:11px;color:#64748b">${m.desc||''}</td>
+              <td style="padding:6px 8px;text-align:left;font-family:monospace;color:#16a34a;direction:ltr">${m.in?fmt(m.in):'—'}</td>
+              <td style="padding:6px 8px;text-align:left;font-family:monospace;color:#dc2626;direction:ltr">${m.out?fmt(m.out):'—'}</td>
+              <td style="padding:6px 8px;text-align:left;font-family:monospace;font-weight:700;direction:ltr;color:${m.bal<0?'#dc2626':'#0f172a'}">${fmt(m.bal)}</td>
+              ${currency!=='LYD'?`<td style="padding:6px 8px;text-align:left;font-family:monospace;font-size:11px;color:#64748b;direction:ltr">${m.avgCost?fmt(m.avgCost,4):''}</td>`:''}
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" onclick="exportStatement('${currency}','${location}')">📤 تصدير Excel</button>
+      <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ طباعة</button>
+      <button class="btn btn-primary btn-sm" onclick="document.getElementById('modal').classList.remove('show')">إغلاق</button>
+    </div>
+  `;
+  // Make modal wider
+  content.style.maxWidth = '95vw';
+  content.style.width = '1100px';
+  modal.classList.add('show');
+}
+
+function exportStatement(currency, location){
+  // Re-build movements like in showStatement (simplified)
+  const names={tripoli:'طرابلس',misrata:'مصراتة',turkey:'تركيا',dubai:'دبي'};
+  // Get the displayed table from modal
+  const rows = document.querySelectorAll('#modalContent table tr');
+  const data = [[`كشف حساب - فرع ${names[location]} - ${currency}`]];
+  data.push([]);
+  data.push(['التاريخ','النوع','البيان','وارد','صادر','الرصيد']);
+  rows.forEach(tr=>{
+    if(tr.querySelector('th')) return;
+    const cells = tr.querySelectorAll('td');
+    if(cells.length >= 6){
+      data.push(Array.from(cells).slice(0,6).map(c=>c.textContent.trim().replace(/—/g,'')));
+    }
+  });
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!rtl'] = true;
+  XLSX.utils.book_append_sheet(wb, ws, 'كشف حساب');
+  XLSX.writeFile(wb, `كشف_حساب_${location}_${currency}_${new Date().toISOString().substr(0,10)}.xlsx`);
+}
+
+// ============ FLATPICKR INITIALIZATION (English digits calendar) ============
+function initFlatpickr(){
+  if(typeof flatpickr === 'undefined') return;
+  // Force English locale for all flatpickr instances
+  if(flatpickr.l10ns && flatpickr.l10ns.default){
+    flatpickr.l10ns.default.firstDayOfWeek = 6;
+  }
+  // Date inputs
+  document.querySelectorAll('input[type="date"]:not(.flatpickr-input)').forEach(el=>{
+    if(el._flatpickr) return;
+    flatpickr(el, {
+      dateFormat: 'Y-m-d',
+      altInput: false,
+      allowInput: true,
+    });
+  });
+  // Month inputs (using monthSelectPlugin)
+  document.querySelectorAll('input[type="month"]:not(.flatpickr-input)').forEach(el=>{
+    if(el._flatpickr) return;
+    flatpickr(el, {
+      plugins: [new monthSelectPlugin({shorthand:false, dateFormat:'Y-m', altFormat:'F Y'})],
+      allowInput: true,
+      altInput: true,
+    });
+  });
+}
+
+function init(){
+  // Add modal element if not present
+  if(!document.getElementById('modal')){
+    const modalDiv = document.createElement('div');
+    modalDiv.id = 'modal';
+    modalDiv.className = 'modal-overlay';
+    modalDiv.innerHTML = '<div class="modal" id="modalContent"></div>';
+    modalDiv.addEventListener('click', e=>{ if(e.target === modalDiv) modalDiv.classList.remove('show'); });
+    document.body.appendChild(modalDiv);
+  }
+  // Force Western Arabic Numerals globally
+  if(typeof Chart !== 'undefined' && Chart.defaults){
+    Chart.defaults.font.family = "'Cairo', Arial, sans-serif";
+    Chart.defaults.locale = 'en-US';
+  }
+  // Cleanup any old version data
+  ['v1','v2','v3','v4','v5','v6','v7_clean','v8_seeded','v9_fresh','v10','v11'].forEach(v=>localStorage.removeItem(`forex_accounting_${v}`));
+  loadState();
+  // Show welcome message on first load (no auto-seed)
+  if(state.dollarTrans.length === 0 && state.journalEntries.length === 0 && state.cashTrans.length === 0){
+    setTimeout(()=>{
+      alert(`مرحباً عدنان!\n\nالأرصدة الافتتاحية كما في 1 يونيو 2026:\n\n💰 رأس المال: 1,300,000 د.ل\n\n💵 النقدية:\n• خزينة طرابلس: 698,314\n• خزينة مصراتة: 518,526\n\n📦 المخزون $:\n• طرابلس: 151,537 @ 9.05\n• مصراتة: 21,973 @ 8.34\n• تركيا: -176,524 @ 8.3339\n\n👥 ذمم:\n• مدينون: 1,124,550 (= 135,000$ × 8.33)\n• دائنون: 1,124,550\n\n📈 أرباح محتجزة: 371 د.ل\n\nالميزانية متوازنة. ابدأ تسجيل عمليات يونيو.`);
+    }, 200);
+  }
+  document.getElementById('periodSelector').value = state.currentPeriod;
+  document.getElementById('periodSelector').addEventListener('change', e=>{
+    state.currentPeriod = e.target.value;
+    saveState();
+    render();
+  });
+  document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click', ()=>goTo(n.dataset.page)));
+  render();
+}
+document.addEventListener('DOMContentLoaded', ()=>{init(); setTimeout(initFlatpickr, 100);});
+
+
+</script>
+<script>
+// ============ SUPABASE AUTH + CLOUD SYNC ============
+let supabaseClient = null;
+let currentUser = null;
+let authMode = 'login';
+let syncDebounceTimer = null;
+
+function initSupabase(){
+  if(!ENABLE_CLOUD_SYNC || SUPABASE_URL === 'YOUR_SUPABASE_URL_HERE'){
+    console.log('Cloud sync disabled - running in local mode');
+    return false;
+  }
+  try {
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    return true;
+  } catch(e){
+    console.error('Supabase init failed:', e);
+    return false;
+  }
+}
+
+function switchAuthTab(mode){
+  authMode = mode;
+  document.getElementById('tabLogin').style.color = mode==='login'?'#1F4E78':'#94a3b8';
+  document.getElementById('tabLogin').style.borderBottomColor = mode==='login'?'#1F4E78':'transparent';
+  document.getElementById('tabSignup').style.color = mode==='signup'?'#1F4E78':'#94a3b8';
+  document.getElementById('tabSignup').style.borderBottomColor = mode==='signup'?'#1F4E78':'transparent';
+  document.getElementById('authSubmitBtn').textContent = mode==='login'?'تسجيل دخول':'إنشاء حساب جديد';
+  document.getElementById('authError').style.display = 'none';
+}
+
+async function handleAuth(){
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const errorEl = document.getElementById('authError');
+  
+  if(!email || !password){
+    errorEl.textContent = 'الرجاء تعبئة البريد وكلمة السر';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if(password.length < 6){
+    errorEl.textContent = 'كلمة السر يجب 6 أحرف على الأقل';
+    errorEl.style.display = 'block';
+    return;
+  }
+  
+  document.getElementById('authForm').style.display = 'none';
+  document.getElementById('authLoading').style.display = 'block';
+  
+  try {
+    let result;
+    if(authMode === 'signup'){
+      result = await supabaseClient.auth.signUp({email, password});
+      if(result.error) throw result.error;
+      if(result.data.user && !result.data.session){
+        // Email confirmation required - inform user
+        document.getElementById('authLoading').style.display = 'none';
+        document.getElementById('authForm').style.display = 'block';
+        errorEl.textContent = '✉️ تم إرسال رابط التفعيل لبريدك. افتحه ثم سجّل دخولك';
+        errorEl.style.background = '#dcfce7';
+        errorEl.style.color = '#166534';
+        errorEl.style.display = 'block';
+        switchAuthTab('login');
+        return;
+      }
+    } else {
+      result = await supabaseClient.auth.signInWithPassword({email, password});
+      if(result.error) throw result.error;
+    }
+    currentUser = result.data.user;
+    await loadStateFromCloud();
+    subscribeToOwnChanges();
+    hideAuthOverlay();
+    render();
+    showSyncStatus('✓ متصل', '#16a34a');
+  } catch(e){
+    document.getElementById('authLoading').style.display = 'none';
+    document.getElementById('authForm').style.display = 'block';
+    errorEl.textContent = 'خطأ: ' + (e.message || 'فشل تسجيل الدخول');
+    errorEl.style.background = '#fee2e2';
+    errorEl.style.color = '#991b1b';
+    errorEl.style.display = 'block';
+  }
+}
+
+function offlineMode(){
+  console.log('Switching to offline mode');
+  hideAuthOverlay();
+  document.getElementById('syncStatus').style.display = 'none';
+  render();
+}
+
+function hideAuthOverlay(){
+  document.getElementById('authOverlay').style.display = 'none';
+}
+
+function showAuthOverlay(){
+  document.getElementById('authOverlay').style.display = 'flex';
+}
+
+function showSyncStatus(text, color='#64748b'){
+  const el = document.getElementById('syncStatus');
+  document.getElementById('syncText').textContent = text;
+  el.style.color = color;
+  el.style.display = 'block';
+}
+
+async function loadStateFromCloud(){
+  if(!supabaseClient || !currentUser) return;
+  try {
+    const {data, error} = await supabaseClient
+      .from('user_data')
+      .select('data')
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+    if(error){console.error('Load error:', error); return;}
+    if(data && data.data){
+      try {
+        const cloudState = data.data;
+        state = {...state, ...cloudState, settings:{...state.settings,...(cloudState.settings||{})}};
+        if(state.accounts){
+          DEFAULT_ACCOUNTS.forEach(defAcc=>{
+            if(!state.accounts.find(a=>a.code===defAcc.code)){
+              state.accounts.push({...defAcc});
+            }
+          });
+        }
+        console.log('State loaded from cloud');
+      } catch(e){ console.error('Cloud state parse error:', e); }
+    } else {
+      await saveStateToCloud();
+      console.log('Initialized cloud with local state');
+    }
+  } catch(e){console.error('Cloud load failed:', e);}
+}
+
+// Realtime subscription for same-user multi-device sync
+let realtimeChannel = null;
+let lastSaveTimestamp = null;
+let isApplyingRemoteUpdate = false;
+
+function subscribeToOwnChanges(){
+  if(!supabaseClient || !currentUser || realtimeChannel) return;
+  realtimeChannel = supabaseClient
+    .channel('own_data_changes')
+    .on('postgres_changes', 
+      {event:'*', schema:'public', table:'user_data', filter:'user_id=eq.'+currentUser.id}, 
+      async (payload)=>{
+        // Skip if this update came from our own save (echo prevention)
+        if(payload.new && payload.new.updated_at === lastSaveTimestamp) return;
+        console.log('Update from another device detected, reloading...');
+        try {
+          isApplyingRemoteUpdate = true;
+          const cloudState = payload.new.data;
+          state = {...state, ...cloudState, settings:{...state.settings,...(cloudState.settings||{})}};
+          if(state.accounts){
+            DEFAULT_ACCOUNTS.forEach(defAcc=>{
+              if(!state.accounts.find(a=>a.code===defAcc.code)){
+                state.accounts.push({...defAcc});
+              }
+            });
+          }
+          // Save to localStorage too
+          try{localStorage.setItem(STORAGE_KEY, JSON.stringify(state));}catch(e){}
+          render();
+          showSyncStatus('🔄 محدّث من جهاز آخر', '#2563eb');
+          setTimeout(()=>showSyncStatus('✓ متزامن', '#16a34a'), 2000);
+        } finally {
+          setTimeout(()=>{ isApplyingRemoteUpdate = false; }, 200);
+        }
+      })
+    .subscribe();
+  console.log('Realtime subscription active for user:', currentUser.email);
+}
+
+async function saveStateToCloud(){
+  if(!supabaseClient || !currentUser) return;
+  if(isApplyingRemoteUpdate) return;  // don't echo back
+  try {
+    showSyncStatus('☁️ مزامنة...', '#2563eb');
+    const now = new Date().toISOString();
+    lastSaveTimestamp = now;  // track our own save to ignore the realtime echo
+    const {error} = await supabaseClient
+      .from('user_data')
+      .upsert({user_id: currentUser.id, data: state, updated_at: now}, {onConflict:'user_id'});
+    if(error){ showSyncStatus('⚠️ خطأ مزامنة', '#dc2626'); console.error(error); return; }
+    showSyncStatus('✓ متزامن', '#16a34a');
+  } catch(e){
+    showSyncStatus('⚠️ غير متصل', '#dc2626');
+    console.error('Cloud save failed:', e);
+  }
+}
+
+// Hook into existing saveState
+const _originalSaveState = window.saveState || saveState;
+window.saveState = function(){
+  // Save locally first (existing behavior)
+  try{localStorage.setItem(STORAGE_KEY, JSON.stringify(state));}catch(e){console.error(e);}
+  // Debounced cloud sync
+  if(supabaseClient && currentUser){
+    if(syncDebounceTimer) clearTimeout(syncDebounceTimer);
+    syncDebounceTimer = setTimeout(saveStateToCloud, 1000);
+  }
+};
+
+async function logoutUser(){
+  if(!confirm('تسجيل خروج؟')) return;
+  if(supabaseClient){
+    await supabaseClient.auth.signOut();
+  }
+  currentUser = null;
+  showAuthOverlay();
+}
+
+// Add user chip to topbar
+function addUserChip(){
+  const topbarRight = document.querySelector('.topbar-right');
+  if(!topbarRight || document.getElementById('userChip')) return;
+  const chip = document.createElement('div');
+  chip.id = 'userChip';
+  chip.className = 'user-chip';
+  chip.innerHTML = `👤 ${currentUser ? currentUser.email.split('@')[0] : 'محلي'} <span style="margin-right:4px;color:#94a3b8">|</span> <span onclick="logoutUser()" style="color:#dc2626">خروج</span>`;
+  topbarRight.insertBefore(chip, topbarRight.firstChild);
+}
+
+// Initialize on load
+async function initAuth(){
+  const hasCloud = initSupabase();
+  if(!hasCloud){
+    hideAuthOverlay();
+    return;
+  }
+  showAuthOverlay();
+  // Check existing session
+  try {
+    const {data:{session}} = await supabaseClient.auth.getSession();
+    if(session){
+      currentUser = session.user;
+      await loadStateFromCloud();
+      subscribeToOwnChanges();
+      hideAuthOverlay();
+      render();
+      addUserChip();
+      showSyncStatus('✓ متصل', '#16a34a');
+    }
+  } catch(e){console.error('Session check failed:', e);
