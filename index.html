@@ -843,21 +843,39 @@ function buildIncomeStatement(period){
 // ============ BALANCE SHEET ============
 function buildBalanceSheet(period){
   const inv = getEndOfPeriodInventory(period);
+  // Helper: sum all JE debits-credits for a given account code in the period
+  const jeDelta = (code) => {
+    let b = 0;
+    state.journalEntries.forEach(je=>{
+      if(je.date > period+'-31') return;
+      je.lines.forEach(l=>{
+        if(l.accountCode === code) b += (parseFloat(l.debit)||0) - (parseFloat(l.credit)||0);
+      });
+    });
+    return b;
+  };
   const balance = (code) => {
+    // Cash accounts already include JEs via getCashBalance
     if(code === '1101') return getCashBalance('1101', period);
     if(code === '1102') return getCashBalance('1102', period);
     if(code === '1103') return getCashBalance('1103', period);
     if(code === '1104') return getCashBalance('1104', period);
-    if(code === '1301') return inv.tripoli.USD.value;
-    if(code === '1302') return inv.misrata.USD.value;
-    if(code === '1303') return inv.turkey.USD.value;
-    if(code === '1304') return inv.dubai.USD.value;
-    if(code === '1311') return inv.tripoli.EUR.value;
-    if(code === '1312') return inv.misrata.EUR.value;
-    if(code === '1313') return inv.turkey.EUR.value;
-    if(code === '1314') return inv.dubai.EUR.value;
-    if(code === '3101') return -state.settings.capital;
-    // Generic from JE
+    // Inventory accounts: engine value + any manual JE adjustments
+    if(code === '1301') return inv.tripoli.USD.value + jeDelta(code);
+    if(code === '1302') return inv.misrata.USD.value + jeDelta(code);
+    if(code === '1303') return inv.turkey.USD.value + jeDelta(code);
+    if(code === '1304') return inv.dubai.USD.value + jeDelta(code);
+    if(code === '1311') return inv.tripoli.EUR.value + jeDelta(code);
+    if(code === '1312') return inv.misrata.EUR.value + jeDelta(code);
+    if(code === '1313') return inv.turkey.EUR.value + jeDelta(code);
+    if(code === '1314') return inv.dubai.EUR.value + jeDelta(code);
+    // Capital account: settings opening + JE deltas (so owner deposit/withdrawal templates work correctly)
+    if(code === '3101'){
+      const ob = state.settings.openingBalances[code] || {debit:0,credit:0};
+      const opening = -((state.settings.capital||0) + (ob.credit||0) - (ob.debit||0));
+      return opening + jeDelta(code);
+    }
+    // Generic from opening + JE
     const ob = state.settings.openingBalances[code] || {debit:0,credit:0};
     let b = (ob.debit||0) - (ob.credit||0);
     state.journalEntries.forEach(je=>{
